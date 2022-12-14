@@ -1,3 +1,6 @@
+# archive folder - where data and benchmarks are stored
+archive
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
