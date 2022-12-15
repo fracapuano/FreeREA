@@ -10,7 +10,7 @@
 /dataSources.local.xml
 
 # pycharm
-/.idea/
+.idea/
 
 # archive folder - where data and benchmarks are stored
 archive
