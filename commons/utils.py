@@ -8,20 +8,16 @@ def get_project_root():
     """
     return Path(__file__).parent.parent
 
-def check_architecture(input_str:str)->bool: 
-    """Checks if the format of a given architecture is valid for the NATS Bench topology space"""
-    all_ops = {'none', 'nor_conv_3x3', 'avg_pool_3x3', 'skip_connect', 'nor_conv_1x1'}
-    all_numbers = {'0', '1', '2'}
-
-    subcells = input_str.split("+")  # divide the input string into different levels
-    ops = chain(*[subcell.split("|")[1:-1] for subcell in subcells])  # divide into different nodes to retrieve ops
-    subops = chain(*[op.split("~") for op in ops]) # divide into operation and node
-
-    is_valid = all([(n in all_ops) or (n in all_numbers) for n in subops]) # check if the full string is valid
-    return is_valid
-
 def architecture_to_genotype(arch_str:str)->List: 
-    """Turn architectures string into genotype list"""
+    """Turn architectures string into genotype list
+    
+    Args: 
+        arch_str(str): String characterising the cell structure only. 
+    
+    Returns: 
+        List: List containing the operations in the input cell structure.
+              In a genetic-algorithm setting, this description represents a genotype. 
+    """
     all_ops = {'none', 'nor_conv_3x3', 'avg_pool_3x3', 'skip_connect', 'nor_conv_1x1'}
     all_numbers = {'0', '1', '2'}
 
@@ -33,12 +29,24 @@ def genotype_to_architecture(genotype:List)->str:
     """Reformats genotype as architecture string"""
     return "|{}|+|{}|{}|+|{}|{}|{}|".format(*genotype)
 
+def cellstructure_isvalid(input_str:str)->bool: 
+    """Checks if the format of a given cell structure is valid for the NATS Bench topology space"""
+    
+    all_ops = {'none', 'nor_conv_3x3', 'avg_pool_3x3', 'skip_connect', 'nor_conv_1x1'}
+    all_numbers = {'0', '1', '2'}
+
+    subcells = input_str.split("+")  # divide the input string into different levels
+    ops = chain(*[subcell.split("|")[1:-1] for subcell in subcells])  # divide into different nodes to retrieve ops
+    subops = chain(*[op.split("~") for op in ops]) # divide into operation and node
+
+    is_valid = all([(n in all_ops) or (n in all_numbers) for n in subops]) # check if the full string is valid
+    return is_valid
+
 def genotype_is_valid(genotype:List)->bool:
-    """Checks whether or not genotype is valid"""
+    """Checks whether or not genotype is valid for the NATS Bench topology space"""
     all_ops = {'none', 'nor_conv_3x3', 'avg_pool_3x3', 'skip_connect', 'nor_conv_1x1'}
     all_numbers = {'0', '1', '2'}
 
     subops = chain(*[op.split("~") for op in genotype]) # divide into operation and node
     is_valid = all([(n in all_ops) or (n in all_numbers) for n in subops]) # check if the full string is valid
     return is_valid
-
