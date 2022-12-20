@@ -54,10 +54,17 @@ class Individual():
     def fitness(self): 
         return self._fitness
     
-    def update_fitness(self, metric:Callable): 
+    def update_fitness(self, metric:Callable, attribute:str="net"): 
         """Update the current value of fitness using provided metric"""
-        self._fitness = metric(self.net)
+        self._fitness = metric(getattr(self, attribute))
     
+    def overwrite_fitness(self, new_fitness:float):
+        """Overwrite current value of fitness"""
+        if isinstance(new_fitness, float): 
+            self._fitness = new_fitness
+        else: 
+            raise ValueError(f"New fitness value ({new_fitness}) is not a number!")
+
     @property
     def rank(self): 
         return self._rank
@@ -170,8 +177,8 @@ class Population:
 
     def update_fitness(self, fitness_function:Callable): 
         """Updates the fitness value of individuals in the population"""
-        for individual in self._population: 
-            individual.update_fitness(metric=fitness_function)
+        for individual in self.individuals: 
+            individual.overwrite_fitness(fitness_function(individual))
     
     def apply_on_individuals(self, function:Callable, inplace:bool=True)->Union[Iterable, None]: 
         """Applies a function on each individual in the population
