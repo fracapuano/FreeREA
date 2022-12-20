@@ -185,7 +185,7 @@ class NATSInterface:
         n_samples:int=10) -> Tuple[List, List]:
         """Generate a group of architectures chosen at random"""
         idxs = [self._api.random() for _ in range(n_samples)]
-        tinynets = [self.query_with_index(i) for i in idxs]
-        cell_structures = [self._api.get_net_config(index=i, dataset=self.dataset)["arch_str"] for i in idxs]
+        tinynets = [self.query_with_index(i)[0] for i in idxs]
+        cell_structures = [self.query_with_index(i)[1] for i in idxs]
         # return tinynets and cell_structures_string
         return tinynets, cell_structures
