@@ -7,6 +7,7 @@ from .nats_interface import NATSInterface
 from .utils import *
 from itertools import chain
 
+
 NATSPATH = str(get_project_root()) + "/archive/NATS-tss-v1_0-3ffb9-simple/"
 
 class Individual(): 
@@ -91,22 +92,17 @@ class Genetic:
     
     def obtain_parents(self, population:Iterable[Individual], n_parents:int=2) -> Iterable[Individual]:
         """Obtain n_parents from population. Parents are defined as the fittest individuals in n_parents tournaments"""
-        parents = []
-        for p in range(n_parents): 
-            tournament = self.tournament(population = population)
-            # parents are defined as fittest individuals in tournaments
-            parents.append(
-                sorted(tournament, key = lambda individual: individual.fitness, reverse=True)[0]
-            )
+        tournament = self.tournament(population = population)
+        # parents are defined as fittest individuals in tournaments
+        parents = sorted(tournament, key = lambda individual: individual.fitness, reverse=True)[:n_parents]
         return parents
     
     def mutate(self, individual:Individual, n_loci:int=1) -> Individual: 
         """Applies mutation to a given individual"""
-        mutant_individual = copy(individual)
         for _ in range(n_loci): 
-            mutant_genotype = mutant_individual.genotype
+            mutant_genotype = individual.genotype
             # select a locus in the genotype (that is, where mutation will occurr)
-            mutant_locus = np.random.randint(low=0, high=len(mutant_individual.genotype))
+            mutant_locus = np.random.randint(low=0, high=len(mutant_genotype))
             # mapping the locus to the actual gene that will effectively change
             mutant_gene = mutant_genotype[mutant_locus]
             operation, level = mutant_gene.split("~")  # splits the gene into operation and level
@@ -115,8 +111,10 @@ class Genetic:
             
             # overwriting the mutant gene with a new one
             mutant_genotype[mutant_locus] = np.random.choice(a=list(mutations)) + f"~{level}"
-            mutant_individual.update_genotype(new_genotype=mutant_genotype)
-        
+
+        mutant_individual = Individual(net=None, genotype=None)
+        mutant_individual.update_genotype(mutant_genotype)
+
         return mutant_individual
     
     def recombine(self, individuals:Iterable[Individual], n_parts:int=2) -> Individual: 
@@ -137,7 +135,9 @@ class Genetic:
         else:
             recombinant_genotype = chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:])
         
+        recombinant = Individual(net=None, genotype=None)
         recombinant.update_genotype(list(recombinant_genotype))
+
         return recombinant
 
 class Population: 
@@ -226,11 +226,14 @@ class Population:
             def minmax_individual(individual:Individual):
                 """Normalizes in the [0,1] range the value of a given score"""
                 new_individual = copy(individual)
-                setattr(
-                    new_individual,
-                    score, 
-                    (getattr(individual, score) - min_value) / (max_value - min_value) if max_value != min_value else 0
-                    )
+                if getattr(new_individual, score) > 1: # only remapping elements not in the [0,1] range
+                    setattr(
+                        new_individual,
+                        score, 
+                        (getattr(individual, score) - min_value) / (max_value - min_value) if max_value != min_value else 0
+                        )
+                else:
+                    pass
                 return new_individual
 
             # normalizing
@@ -238,8 +241,9 @@ class Population:
                 # mapping each score value in the [0,1] range considering population-wise metrics
                 minmax_individual,
                 # looping in all individuals
-                modified_individuals,     
+                modified_individuals
             ))
+
             if inplace: 
                 self.update_population(new_population=new_population)
             else: 
