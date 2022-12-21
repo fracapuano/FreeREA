@@ -40,7 +40,6 @@ class Individual():
     def genotype(self): 
         return self._genotype
 
-    @genotype.setter
     def update_genotype(self, new_genotype:List): 
         """Update current genotype with new one. When doing so, also the network field is updated"""
         # sanity check on new genotype
@@ -113,6 +112,7 @@ class Genetic:
             # mutation changes gene, so the current one must be removed from the pool of candidate genes
             mutations = self.genome.difference(mutant_gene)
             # overwriting the mutant gene with a new one
+            print("Possible mutations", mutations)
             mutant_genotype[mutant_locus] = np.random.choice(a=mutations, size=1)
         
         return mutant_individual.update_genotype(new_genotype=mutant_genotype)
@@ -131,11 +131,11 @@ class Genetic:
         realization = np.random.random()
         # defining new genotype of recombinant individual
         if realization < self.cross_probability:
-            recombinant_genotype = chain(individual1.genotype[:recombination_locus], individual2[recombination_locus:])
+            recombinant_genotype = chain(individual1.genotype[:recombination_locus], individual2.genotype[recombination_locus:])
         else:
-            recombinant_genotype = chain(individual2.genotype[:recombination_locus], individual1[recombination_locus:])
+            recombinant_genotype = chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:])
         
-        recombinant.update_genotype(recombinant_genotype)
+        recombinant.update_genotype(list(recombinant_genotype))
         return recombinant
 
 class Population: 
@@ -184,7 +184,7 @@ class Population:
         """Applies a function on each individual in the population
         
         Args: 
-            function (Callable): function to apply on each individual. 
+            function (Callable): function to apply on each individual. Must return an object of class Individual.
             inplace (bool, optional): Whether to apply the function on the individuals in current population or
                                       on a copy of these.
         Returns: 
@@ -221,7 +221,11 @@ class Population:
             def minmax_individual(individual:Individual):
                 """Normalizes in the [0,1] range the value of a given score"""
                 new_individual = copy(individual)
-                setattr(new_individual, score, (getattr(individual, score) - min_value) / (max_value - min_value))
+                setattr(
+                    new_individual,
+                    score, 
+                    (getattr(individual, score) - min_value) / (max_value - min_value) if max_value != min_value else 0
+                    )
                 return new_individual
 
             # normalizing
@@ -239,6 +243,14 @@ class Population:
         except AttributeError:  # extremes attribute not present... sorting&setting 
             self.set_extremes(score=score)
             self.normalize_scores(score)
+    
+    def age(self): 
+        """Embeds ageing into the process"""
+        def individuals_ageing(individual): 
+            individual.age += 1
+            return individual
+
+        self.apply_on_individuals(function=individuals_ageing, inplace=True)
 
 
 def generate_population(searchspace_interface:NATSInterface, individual:Individual)->list: 
