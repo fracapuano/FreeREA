@@ -34,7 +34,7 @@ class Individual():
     def update_net(self):
         """Over-writes net field in light of genotype"""
         genotype_arch_str = genotype_to_architecture(self.genotype)
-        self.net = self.interface.query_with_architecture(architecture_string=genotype_arch_str)
+        self.net, _ = self.interface.query_with_architecture(architecture_string=genotype_arch_str)
 
     @property
     def genotype(self): 
@@ -45,7 +45,7 @@ class Individual():
         # sanity check on new genotype
         if not genotype_is_valid(genotype=new_genotype):
             ValueError(f"genotype {new_genotype} is not a valid replacement for {self.genotype}!")
-        
+
         self._genotype = new_genotype
         self.update_net()
 
@@ -109,13 +109,15 @@ class Genetic:
             mutant_locus = np.random.randint(low=0, high=len(mutant_individual.genotype))
             # mapping the locus to the actual gene that will effectively change
             mutant_gene = mutant_genotype[mutant_locus]
+            operation, level = mutant_gene.split("~")  # splits the gene into operation and level
             # mutation changes gene, so the current one must be removed from the pool of candidate genes
-            mutations = self.genome.difference(mutant_gene)
+            mutations = self.genome.difference([operation])
+            
             # overwriting the mutant gene with a new one
-            print("Possible mutations", mutations)
-            mutant_genotype[mutant_locus] = np.random.choice(a=mutations, size=1)
+            mutant_genotype[mutant_locus] = np.random.choice(a=list(mutations)) + f"~{level}"
+            mutant_individual.update_genotype(new_genotype=mutant_genotype)
         
-        return mutant_individual.update_genotype(new_genotype=mutant_genotype)
+        return mutant_individual
     
     def recombine(self, individuals:Iterable[Individual], n_parts:int=2) -> Individual: 
         """Performs recombination of two given `individuals`"""
@@ -126,14 +128,14 @@ class Genetic:
         recombinant = copy(individual1)
         
         # select the index in which to cut down the individual
-        recombination_locus = np.random.randint(low=0, high=len(individual1.genotype))
+        recombination_locus = np.random.randint(low=0, high=len(individual1.genotype)-1)
         # individual1 is dominant in the recombinant with probability self.cross_p
         realization = np.random.random()
         # defining new genotype of recombinant individual
         if realization < self.cross_probability:
-            recombinant_genotype = chain(individual1.genotype[:recombination_locus], individual2.genotype[recombination_locus:])
+            recombinant_genotype = list(chain(individual1.genotype[:recombination_locus], individual2.genotype[recombination_locus:]))
         else:
-            recombinant_genotype = chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:])
+            recombinant_genotype = list(chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:]))
         
         recombinant.update_genotype(list(recombinant_genotype))
         return recombinant
@@ -146,6 +148,9 @@ class Population:
             self._population = generate_population(searchspace_interface=space, individual=individual)
         else: 
             self._population = init_population
+        
+        self.oldest = None
+        self.worst_n = None
     
     def __iter__(self): 
         for i in self._population: 
@@ -251,7 +256,48 @@ class Population:
             return individual
 
         self.apply_on_individuals(function=individuals_ageing, inplace=True)
+    
+    def add_to_population(self, new_individuals:Iterable[Individual]): 
+        """Add new_individuals to population"""
+        self._population = list(chain(self.individuals, new_individuals))
+    
+    def remove_from_population(self, attribute:str="fitness", n:int=1, ascending:bool=True): 
+        """Remove first/last `n` elements from sorted population population in `ascending/descending`
+        order based on the value of `attribute`"""
+        
+        if not all([hasattr(el, attribute) for el in self.individuals]):
+            raise ValueError(f"Attribute '{attribute}' is not an attribute of all the individuals!")
+        # sort the population based on the value of attribute
+        sorted_population = sorted(self.individuals, key=lambda ind: getattr(ind, attribute), reverse=False if ascending else True)
+        
+        # new population is old population minus the `n` worst individuals with respect to `attribute`
+        self.update_population(sorted_population[n:])
 
+    def update_oldest(self, candidate:Individual): 
+        """Updates oldest individual in the population"""
+        if candidate.age >= self.oldest.age: 
+            self.oldest = candidate
+        else: 
+            pass
+
+    def update_worst_n(self, candidate:Individual, attribute:str="fitness", n:int=2): 
+        """Updates worst_n elements in the population"""
+        if hasattr(candidate, attribute): 
+            if any([getattr(candidate, attribute) < getattr(worst, attribute) for worst in self.worst_n]):
+                # candidate is worse than one of the worst individuals
+                bad_individuals = self.worst_n + candidate
+                # sort in increasing values of fitness
+                bad_sorted = sorted(bad_individuals, lambda ind: getattr(ind, attribute))
+                self.worst_n = bad_sorted[:n]  # return new worst individuals
+    
+    def set_oldest(self): 
+        """Sets oldest individual in population"""
+        self.oldest = max(self.individuals, key=lambda ind: ind.age)
+    
+    def set_worst_n(self, attribute:str="fitness", n:int=2): 
+        """Sets worst n elements based on the value of arbitrary attribute"""
+        self.worst_n = sorted(self.individuals, key=lambda ind: getattr(ind, attribute))[:n]
+    
 
 def generate_population(searchspace_interface:NATSInterface, individual:Individual)->list: 
     """Generate a population of individuals"""
