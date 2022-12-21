@@ -299,10 +299,10 @@ class Population:
         self.worst_n = sorted(self.individuals, key=lambda ind: getattr(ind, attribute))[:n]
     
 
-def generate_population(searchspace_interface:NATSInterface, individual:Individual)->list: 
+def generate_population(searchspace_interface:NATSInterface, individual:Individual, n_individuals:int=20)->list: 
     """Generate a population of individuals"""
     # at first generate full architectures and cell-structure
-    architectures, cells = searchspace_interface.generate_random_samples(n_samples=20)
+    architectures, cells = searchspace_interface.generate_random_samples(n_samples=n_individuals)
     
     # mapping strings to list of genes (~genome)
     genotypes = map(lambda cell: architecture_to_genotype(cell), cells)
