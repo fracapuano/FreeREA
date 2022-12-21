@@ -42,13 +42,13 @@ def fitness_score(individual:Individual)->float:
     scores = ["naswot_score", "logsynflow_score", "skip_score"]
     return sum([getattr(individual, score) for score in scores])
 
-def solve(): 
+def solve(max_generations:int=100, pop_size:int=25): 
     # instantiating a NATSInterface object
     NATS_PATH = str(get_project_root()) + "/archive/NATS-tss-v1_0-3ffb9-simple/"
     nats = NATSInterface(path=NATS_PATH, dataset="cifar10")
 
     # initialize a random population
-    population = Population(space=nats, init_population=True, n_individuals=5)
+    population = Population(space=nats, init_population=True, n_individuals=pop_size)
 
     scores = [score_naswot, score_logsynflow, score_skipped]
     # scoring the population based on the scoring functions defined
@@ -64,54 +64,33 @@ def solve():
     genome = {'none', 'nor_conv_3x3', 'avg_pool_3x3', 'skip_connect', 'nor_conv_1x1'}
     genetic_operator = Genetic(genome=genome)
 
-    MAX_GENERATIONS = 5
+    MAX_GENERATIONS = max_generations
     pop = population.individuals
 
     for gen in tqdm(range(MAX_GENERATIONS)):
         # perform ageing
-        s = time.time()
         population.age()
-        print(f"Time to perform ageing: {time.time() - s} (s)")
         # obtain parents
-        s = time.time()
         parents = genetic_operator.obtain_parents(population=pop)
-        print(f"Time to obtain parents: {time.time() - s} (s)")
         # obtain recombinant child
-        s = time.time()
         child = genetic_operator.recombine(individuals=parents)
-        print(f"Time to obtain child: {time.time() - s} (s)")
         # mutate parents
-        s = time.time()
         mutant1, mutant2 = [genetic_operator.mutate(parent) for parent in parents]
-        print(f"Time to mutate parents: {time.time() - s} (s)")
         # add mutants and child to population
-        s = time.time()
         population.add_to_population([child, mutant1, mutant2])
-        print(f"Time to add elements to population: {time.time() - s} (s)")
         # score the new population
-        s = time.time()
         score_population(population=population, scores=scores)
-        print(f"Time to score the population: {time.time() - s} (s)")
         # normalize scores in the 0-1 range
         for score in ["naswot_score", "logsynflow_score", "skip_score"]: 
-            s = time.time()
             population.set_extremes(score=score)
             population.normalize_scores(score=score, inplace=True)  # normalize values to bring metrics in the same range
-            print(f"Time to Normalize score {score}: {time.time() - s} (s)")
         
         # compute fitness value
-        s = time.time()
         population.update_fitness(fitness_score)
-
-        print(f"Time to compute fitness: {time.time() - s} (s)")
         # prune from population worst (from fitness perspective) individuals
-        s = time.time()
         population.remove_from_population(n=2)
-        print(f"Time to remove worst from population: {time.time() - s} (s)")
         # prune from population oldest individual
-        s = time.time()
         population.remove_from_population(attribute="age", ascending=False)
-        print(f"Time to remove oldest from population: {time.time() - s} (s)")
         # overwrite population
         pop = population.individuals
 
@@ -121,8 +100,8 @@ class FreeREA:
     def __init__(self):
         pass
     
-    def search(self): 
-        result = solve()
+    def search(self, max_generations:int=100, pop_size:int=25): 
+        result = solve(max_generations=max_generations, pop_size=pop_size)
         return result
 
 if __name__=="__main__": 
