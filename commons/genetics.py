@@ -206,8 +206,8 @@ class Population:
     def set_extremes(self, score:str):
         """Set the maximal&minimal value in the population for the score 'score' (must be a class attribute)"""
         # sorting in ascending order
-        sorted_population = sorted(self.individuals, key=lambda individual: getattr(individual, score))
-        min_value, max_value = getattr(sorted_population[0], score), getattr(sorted_population[-1], score),
+        min_value = getattr(min(self.individuals, key=lambda ind: getattr(ind, score)), score)
+        max_value = getattr(max(self.individuals, key=lambda ind: getattr(ind, score)), score)
 
         setattr(self, f"max_{score}", max_value)
         setattr(self, f"min_{score}", min_value)
