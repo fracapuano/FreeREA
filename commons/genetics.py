@@ -59,7 +59,7 @@ class Individual():
     
     def overwrite_fitness(self, new_fitness:float):
         """Overwrite current value of fitness"""
-        if isinstance(new_fitness, float): 
+        if isinstance(new_fitness, float) or isinstance(new_fitness, int): 
             self._fitness = new_fitness
         else: 
             raise ValueError(f"New fitness value ({new_fitness}) is not a number!")
