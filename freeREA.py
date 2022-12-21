@@ -121,7 +121,7 @@ class FreeREA:
     def __init__(self):
         pass
     
-    def search(): 
+    def search(self): 
         result = solve()
         return result
 
