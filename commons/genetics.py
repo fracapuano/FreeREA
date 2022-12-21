@@ -133,19 +133,19 @@ class Genetic:
         realization = np.random.random()
         # defining new genotype of recombinant individual
         if realization < self.cross_probability:
-            recombinant_genotype = list(chain(individual1.genotype[:recombination_locus], individual2.genotype[recombination_locus:]))
+            recombinant_genotype = chain(individual1.genotype[:recombination_locus], individual2.genotype[recombination_locus:])
         else:
-            recombinant_genotype = list(chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:]))
+            recombinant_genotype = chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:])
         
         recombinant.update_genotype(list(recombinant_genotype))
         return recombinant
 
 class Population: 
-    def __init__(self, space:object, individual:object=Individual, init_population:Union[bool, Iterable]=True): 
+    def __init__(self, space:object, individual:object=Individual, init_population:Union[bool, Iterable]=True, n_individuals:int=20): 
         self.space = space
         self.individual = individual
         if init_population:
-            self._population = generate_population(searchspace_interface=space, individual=individual)
+            self._population = generate_population(searchspace_interface=space, individual=individual, n_individuals=n_individuals)
         else: 
             self._population = init_population
         
