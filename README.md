@@ -11,14 +11,24 @@ After having downloaded the repo, the first step to use this code is installing 
 To set up dependancies, set up a virtual environment clonig the `env.yml` file.
 
 ```bash
-cd freeREA && conda env create -f env.yml
+conda env create -f env.yml
 ```
 
-Once dependencies are successfully installed, please go ahead and download **in the main folder** (that is, `freeREA`) the `archive` folder, containing the actual NATS-Bench networks. 
+Once dependencies are successfully installed, please go ahead and download **in the main folder** (that is, `freeREA`) the `archive` folder, containing the actual NATS-Bench networks. Archive also contains data that are otherwise re-downloaded. `archive` is already in the `.gitignore` file of this repo. 
 
-Moreover, archive also contains data that are otherwise re-downloaded. `archive` is already in the `.gitignore` file of this repo. 
+To download `archive`, either download from [here](https://drive.google.com/file/d/1LMpDiS1hmCLsC4Y86bhF41NzqAx5kS8c/view) and then unzip the file in the current file. 
 
-To download `archive`, use [this link](https://drive.google.com/file/d/1LMpDiS1hmCLsC4Y86bhF41NzqAx5kS8c/view?usp=share_link) and then unzip-it.
+It is also possible to run the following: 
+
+```bash
+wget "https://www.dropbox.com/sh/ceeo70u1buow681/AADxyCvBAnE6mMjp7JOoo0LVa/NATS-tss-v1_0-3ffb9-simple.tar"
+tar -xf "NATS-tss-v1_0-3ffb9-simple.tar"
+mv NATS-tss-v1_0-3ffb9-simple.tar archive/NATS-tss-v1_0-3ffb9-simple.tar
+```
+
+However, this alternative solution only downloads the NATS search space and triggers a download of the CIFAR10 dataset. 
+Please consider that downloading the search space only is more than sufficient as fully trained models are not needed, since the benchmark conveniently stores the model performance metrics.
 
 # Examples
 To see an example of how this repository can be used, please refer to [this notebook](https://github.com/fracapuano/freeREA/blob/main/FreeREA.ipynb).
+Moreover, a more generic example of usage can be found [here](https://github.com/gsuriano/Project8_Group5/blob/main/Group5_Step3.ipynb).
