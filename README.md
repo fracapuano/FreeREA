@@ -1,5 +1,5 @@
 > **Disclaimer**
-This notebook offers a tour of an implementation of [FreeREA: Training-Free Evolution-based Architecture Search](https://arxiv.org/pdf/2207.05135.pdf), by Cavagnero et al, 2022.
+This repo offers a tour of an implementation of [FreeREA: Training-Free Evolution-based Architecture Search](https://arxiv.org/pdf/2207.05135.pdf), by Cavagnero et al, 2022.
 This work is not associated in any way or form with the authors and only aims at reproducing the findings presented by the authors in the cited paper. 
 The main author has been informed of the publicity of this re-implementation. 
 
