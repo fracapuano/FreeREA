@@ -89,7 +89,6 @@ def cifar10(path:str=str(get_project_root()) + "/archive/data", size:int=32, bat
         Tuple[DataLoader, DataLoader]: Tuple of DataLoader object in which the first element is the train-set dataloader and 
                                        second element is test-set dataloader.
     """
-
     # define a training set in the path folder
     is_training = True
     trainset = torchvision.datasets.CIFAR10(root=path, 
@@ -130,7 +129,6 @@ def cifar100(path:str=str(get_project_root()) + "/archive/data", size:int=32, ba
         Tuple[DataLoader, DataLoader]: Tuple of DataLoader object in which the first element is the train-set dataloader and 
                                        second element is test-set dataloader.
     """
-
     # define a training set in the path folder
     is_training = True
     trainset = torchvision.datasets.CIFAR100(root=path, 
@@ -193,7 +191,7 @@ def imagenet16_120(path:str=str(get_project_root()) + "/archive/data", size:int=
     is_training = False
     # define a test set in the path folder
     testset = ImageNet16(root=path, 
-                         train=is_training, 
+                         train=is_training,
                          transform=imagenet_transform(train=is_training, size=size),
                          use_num_of_class_only=120)
     # define trainingset loader
@@ -203,10 +201,12 @@ def imagenet16_120(path:str=str(get_project_root()) + "/archive/data", size:int=
 
     return [trainloader, testloader]
 
+# this locations are specific to the machine used. You may need to download ImageNet16-120
+# inside of archive/data to fully reproduce these results. The download of CIFAR10 and CIFAR100
+# is triggered by the execution of the code itself.
 name2dataset = {
-    "cifar10": cifar10(),
-    "cifar100": cifar100(), 
-    "imagenet16-120": imagenet16_120(),
-    "imagenet": imagenet16_120()
+    "cifar10": cifar10("/data/lucar/datasets/CIFAR10"),
+    "cifar100": cifar100("/data/lucar/datasets/CIFAR100"), 
+    "imagenet16-120": imagenet16_120("/data/lucar/datasets/ImageNet16"),
+    "imagenet": imagenet16_120("/data/lucar/datasets/ImageNet16")
 }
-
