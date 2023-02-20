@@ -8,7 +8,7 @@ import numpy as np
 class NATSInterface:
     def __init__(
         self, 
-        path:str=str(get_project_root()) + "/archive/NATS-tss-v1_0-03ffb9-simple/",
+        path:str=str(get_project_root()) + "/archive/NATS-tss-v1_0-3ffb9-simple",
         dataset:str="cifar10", 
         verbose:bool=False
         ):
@@ -41,7 +41,21 @@ class NATSInterface:
     
     def __getitem__(self, idx:int) -> TinyNetwork: 
         """Returns (untrained) network corresponding to index `idx`"""
-        self.query_index(idx=idx, trained_weights=False)
+        return self.query_with_index(idx=idx, trained_weights=False)
+
+    def __iter__(self):
+        """Iterator method"""
+        self.iteration_index = 0
+        return self
+
+    def __next__(self):
+        if self.iteration_index >= self.__len__():
+            raise StopIteration
+        # access current element 
+        net = self[self.iteration_index]
+        # update the iteration index
+        self.iteration_index += 1
+        return net
     
     def nats_ops(self):
         return {'skip_connect', 'nor_conv_1x1', 'nor_conv_3x3', 'none', 'avg_pool_3x3'}
