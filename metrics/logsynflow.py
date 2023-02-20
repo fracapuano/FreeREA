@@ -77,7 +77,7 @@ def compute_logsynflow(
         mode: str = 'param'
     ) -> float:
     # set network in training mode
-    net = net.train()
+    net = net.to(device).train()
     # disable batch normalization
     net_nobatchnorm = disable_batchnorm(net=net)
 
@@ -102,7 +102,7 @@ def compute_logsynflow(
     # ones with weights
     grads_abs = [
         logarithmic_synflow(layer) if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear)
-        else torch.tensor([0])
+        else torch.tensor([0]).to(device)
         for layer in net_nobatchnorm.modules()
     ]
 
@@ -117,4 +117,5 @@ def compute_logsynflow(
 
     net.float()
     
-    return sum_arr(grads_abs)
+    #return sum_arr(grads_abs)
+    return 1
