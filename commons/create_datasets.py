@@ -1,5 +1,4 @@
 """Defines various dataset builders (mainly inspired to: https://github.com/NiccoloCavagnero/FreeREA/blob/master/datasets.py)"""
-import torch
 import torchvision
 from torch.utils.data import DataLoader
 from .utils import get_project_root
@@ -203,3 +202,11 @@ def imagenet16_120(path:str=str(get_project_root()) + "/archive/data", size:int=
                             shuffle=False)
 
     return [trainloader, testloader]
+
+name2dataset = {
+    "cifar10": cifar10(),
+    "cifar100": cifar100(), 
+    "imagenet16-120": imagenet16_120(),
+    "imagenet": imagenet16_120()
+}
+
