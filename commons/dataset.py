@@ -38,11 +38,11 @@ class Dataset:
 
     def set_trainloader(self):
         if self._name in self.accepted_datasets:
-            self.trainloader, _ = self._traintest_builder(batch_size=self.batchsize)
+            self.trainloader, _ = self._traintest_builder
     
     def set_testloader(self):
         if self._name in self.accepted_datasets: 
-            _, self.testloader = self._traintest_builder(batch_size=self.batchsize)
+            _, self.testloader = self._traintest_builder
 
     def random_examples(self, split:str="train", with_labels:bool=True)->Iterable[torch.Tensor]:
         """Return random examples from the dataset.
@@ -62,7 +62,7 @@ class Dataset:
             if with_labels:  # returnig examples and labels
                 return next(iter(self.trainloader))
             else:  # returning examples only
-                return next(self.trainloader)[0]
+                return next(iter(self.trainloader))[0]
         
         # access `test` split
         elif split.lower()=="test":
@@ -70,7 +70,7 @@ class Dataset:
             if with_labels: # returnig examples and labels
                 return next(iter(self.testloader))
             else: # returning examples only
-                return next(self.testloader)[0]
+                return next(iter(self.testloader))[0]
 
         else:
             raise ValueError(f"Split {split} not accepted! Either 'train' or 'test'")
