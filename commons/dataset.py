@@ -1,68 +1,77 @@
 from .create_datasets import *
+from .create_datasets import name2dataset
+from typing import Iterable
+import torch
 
-class DataSet: 
+class Dataset: 
     def __init__(self, name:str="cifar10", batchsize:int=32): 
         self._name = name
         self._batchsize = batchsize
+        self._traintest_builder = name2dataset[self._name]
 
-        self.accepted_datasets = ["cifar10", "cifar100", "imagenet16-120"]
+        self.accepted_datasets = ["cifar10", "cifar100", "imagenet16-120", "imagenet"]
     
     @property
     def name(self): 
         return self._name
+    
     @name.setter
-    def change(self, new_dataset:str):
-        self._name = new_dataset.lower()
+    def change_dataset(self, new_dataset:str):
+        if new_dataset.lower in self.accepted_datasets:
+            self._name = new_dataset.lower()
+            self._traintest_builder = name2dataset[self._name]
+
+        else: 
+            raise ValueError(f"{new_dataset} not in {self.accepted_datasets}")
+    
     @property
     def batchsize(self): 
         return self._batchsize
+    
     @batchsize.setter
     def change_batchsize(self, new_batchsize:int): 
         if isinstance(new_batchsize, int) and new_batchsize <= 64:
             self._batchsize = new_batchsize
         else: 
-            print("Friend don't friends use batchsizes larger than 64")
-            raise ValueError("Batch size: {new_batchsize} not accepted")
+            print("Friends don't let friends use batchsizes larger than 64. \n\t (~Y. LeCunn)")
+            raise ValueError(f"Batch size: {new_batchsize} not accepted")
 
-    def set_trainloader(self): 
+    def set_trainloader(self):
         if self._name in self.accepted_datasets:
-            self.trainloader = cifar10(size=self.batchsize)[0]
-        else: 
-            raise NotImplementedError("Other datasets not yet implemented!")
+            self.trainloader, _ = self._traintest_builder(batch_size=self.batchsize)
     
     def set_testloader(self):
         if self._name in self.accepted_datasets: 
-            self.testloader = cifar10(size=self.batchsize)[1]
-        else: 
-            raise NotImplementedError("Other datasets not yet implemented!") 
+            _, self.testloader = self._traintest_builder(batch_size=self.batchsize)
 
-    def random_examples(self, loader:str="train", examples_only:bool=True)->Iterable[torch.Tensor]:
+    def random_examples(self, split:str="train", with_labels:bool=True)->Iterable[torch.Tensor]:
         """Return random examples from the dataset.
         
         Args: 
-            loader (str, optional): Where to sample batches of data from.
+            split (str, optional): Where to sample batches of data from.
                                     Either "train" or "test". Defaults to "train" 
-            examples_only (bool, optional): Whether to return only examples (i.e., without
-                                            returning corresponding labels). Defaults to True. 
+            with_labels (bool, optional): Whether to return labelled or un-labelled examples (i.e., without
+                                            returning corresponding labels). Defaults to True (labelled examples).
         
         Returns: 
             Iterable[torch.Tensor]: Either examples only or an (examples, labels) iterable.
         """
-        
-        if loader.lower()=="train": 
+        # access `train` split
+        if split.lower()=="train": 
             self.set_trainloader()
-            if examples_only:  # returnig only examples
-                return next(iter(self.trainloader))[0]
-            else:  # returning examples and labels
-                return next(self.trainloader)
-
-        elif loader.lower()=="test":
-            self.set_testloader()
-            if examples_only: 
-                return next(iter(self.testloader))[0]
-            else: 
-                return next(self.testloader)
-        else:
-            raise ValueError(f"Loader {loader} not accepted! Either 'train' or 'test'")
+            if with_labels:  # returnig examples and labels
+                return next(iter(self.trainloader))
+            else:  # returning examples only
+                return next(self.trainloader)[0]
         
-"""TODO: Implements similar functions for CIFAR-100 and ImageNet16-120"""
+        # access `test` split
+        elif split.lower()=="test":
+            self.set_testloader()
+            if with_labels: # returnig examples and labels
+                return next(iter(self.testloader))
+            else: # returning examples only
+                return next(self.testloader)[0]
+
+        else:
+            raise ValueError(f"Split {split} not accepted! Either 'train' or 'test'")
+
