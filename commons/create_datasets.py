@@ -204,9 +204,15 @@ def imagenet16_120(path:str=str(get_project_root()) + "/archive/data", size:int=
 # this locations are specific to the machine used. You may need to download ImageNet16-120
 # inside of archive/data to fully reproduce these results. The download of CIFAR10 and CIFAR100
 # is triggered by the execution of the code itself.
-name2dataset = {
-    "cifar10": cifar10("/data/lucar/datasets/CIFAR10"),
-    "cifar100": cifar100("/data/lucar/datasets/CIFAR100"), 
-    "imagenet16-120": imagenet16_120("/data/lucar/datasets/ImageNet16"),
-    "imagenet": imagenet16_120("/data/lucar/datasets/ImageNet16")
-}
+def name2dataset(name:str, batch_size:int=None, size:int=None)->Tuple[DataLoader, DataLoader]:
+    """Serves as an interface between dataset name to the corresponding loader builder."""
+    name = name.lower()
+    if name == "cifar10":
+        return cifar10(path="/data/lucar/datasets/CIFAR10", size=size, batch_size=batch_size)
+    elif name == "cifar100":
+        return cifar100(path="/data/lucar/datasets/CIFAR100", size=size, batch_size=batch_size)
+    elif name == "imagenet16-120" or name == "imagenet":
+        return imagenet16_120(path="/data/lucar/datasets/ImageNet16", size=size, batch_size=batch_size)
+    else:
+        print("Accepted datasets: [CIFAR10, CIFAR100, ImageNet16-120]")
+        raise ValueError(f"Dataset {name} not among accepted ones!")
