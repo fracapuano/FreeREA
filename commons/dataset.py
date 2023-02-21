@@ -5,12 +5,12 @@ import torch
 
 class Dataset: 
     def __init__(self, name:str="cifar10", batchsize:int=32): 
-        self._name = name
+        self._name = name.lower()
         self._batchsize = batchsize
-        self._traintest_builder = name2dataset[self._name]
+        self._traintest_builder = name2dataset(self._name, batch_size=self._batchsize, size=32 if self._name.startswith("cifar") else 16)
 
         self.accepted_datasets = ["cifar10", "cifar100", "imagenet16-120", "imagenet"]
-    
+                
     @property
     def name(self): 
         return self._name
@@ -19,7 +19,7 @@ class Dataset:
     def change_dataset(self, new_dataset:str):
         if new_dataset.lower in self.accepted_datasets:
             self._name = new_dataset.lower()
-            self._traintest_builder = name2dataset[self._name]
+            self._traintest_builder = name2dataset(self._name, batch_size=self._batchsize, size=32 if self._name.startswith("cifar") else 16)
 
         else: 
             raise ValueError(f"{new_dataset} not in {self.accepted_datasets}")
