@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn.modules.batchnorm import _BatchNorm
 import types
-from typing import Union, Text
+from functools import reduce
 
 def sum_arr(arr):
     sum = 0.
@@ -101,9 +101,7 @@ def compute_logsynflow(
     # only appending the results of Convolutional or Linear layers, since they are the only
     # ones with weights
     grads_abs = [
-        logarithmic_synflow(layer) if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear)
-        else torch.tensor([0]).to(device)
-        for layer in net_nobatchnorm.modules()
+        torch.sum(logarithmic_synflow(layer).detach()) if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear) else 0 for layer in net_nobatchnorm.modules()
     ]
 
     # apply signs of all params
@@ -117,5 +115,5 @@ def compute_logsynflow(
 
     net.float()
     
-    #return sum_arr(grads_abs)
-    return 1
+    return reduce(lambda g1, g2: g1+g2, grads_abs).item()
+
