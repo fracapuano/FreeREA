@@ -1,5 +1,4 @@
 """Defines various dataset builders (mainly inspired to: https://github.com/NiccoloCavagnero/FreeREA/blob/master/datasets.py)"""
-import torch
 import torchvision
 from torch.utils.data import DataLoader
 from .utils import get_project_root
@@ -90,7 +89,6 @@ def cifar10(path:str=str(get_project_root()) + "/archive/data", size:int=32, bat
         Tuple[DataLoader, DataLoader]: Tuple of DataLoader object in which the first element is the train-set dataloader and 
                                        second element is test-set dataloader.
     """
-
     # define a training set in the path folder
     is_training = True
     trainset = torchvision.datasets.CIFAR10(root=path, 
@@ -131,7 +129,6 @@ def cifar100(path:str=str(get_project_root()) + "/archive/data", size:int=32, ba
         Tuple[DataLoader, DataLoader]: Tuple of DataLoader object in which the first element is the train-set dataloader and 
                                        second element is test-set dataloader.
     """
-
     # define a training set in the path folder
     is_training = True
     trainset = torchvision.datasets.CIFAR100(root=path, 
@@ -194,7 +191,7 @@ def imagenet16_120(path:str=str(get_project_root()) + "/archive/data", size:int=
     is_training = False
     # define a test set in the path folder
     testset = ImageNet16(root=path, 
-                         train=is_training, 
+                         train=is_training,
                          transform=imagenet_transform(train=is_training, size=size),
                          use_num_of_class_only=120)
     # define trainingset loader
@@ -203,3 +200,19 @@ def imagenet16_120(path:str=str(get_project_root()) + "/archive/data", size:int=
                             shuffle=False)
 
     return [trainloader, testloader]
+
+# this locations are specific to the machine used. You may need to download ImageNet16-120
+# inside of archive/data to fully reproduce these results. The download of CIFAR10 and CIFAR100
+# is triggered by the execution of the code itself.
+def name2dataset(name:str, batch_size:int=None, size:int=None)->Tuple[DataLoader, DataLoader]:
+    """Serves as an interface between dataset name to the corresponding loader builder."""
+    name = name.lower()
+    if name == "cifar10":
+        return cifar10(path="/data/lucar/datasets/CIFAR10", size=size, batch_size=batch_size)
+    elif name == "cifar100":
+        return cifar100(path="/data/lucar/datasets/CIFAR100", size=size, batch_size=batch_size)
+    elif name == "imagenet16-120" or name == "imagenet":
+        return imagenet16_120(path="/data/lucar/datasets/ImageNet16", size=size, batch_size=batch_size)
+    else:
+        print("Accepted datasets: [CIFAR10, CIFAR100, ImageNet16-120]")
+        raise ValueError(f"Dataset {name} not among accepted ones!")

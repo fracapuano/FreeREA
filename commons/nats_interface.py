@@ -3,11 +3,12 @@ from .utils import *
 from xautodl.models import get_cell_based_tiny_net
 from xautodl.models.cell_infers.tiny_network import TinyNetwork
 from typing import Union, Tuple
+import numpy as np
 
 class NATSInterface:
     def __init__(
         self, 
-        path:str=str(get_project_root()) + "/archive/NATS-tss-v1_0-03ffb9-simple/",
+        path:str=str(get_project_root()) + "/archive/NATS-tss-v1_0-3ffb9-simple",
         dataset:str="cifar10", 
         verbose:bool=False
         ):
@@ -26,7 +27,10 @@ class NATSInterface:
     
     @dataset.setter
     def change_dataset(self, new_dataset:str): 
-        """Updates the current dataset with a new one"""
+        """
+        Updates the current dataset with a new one. 
+        Raises ValueError when new_dataset is not one of ["cifar10", "cifar100", "imagenet16-120"]
+        """
         if new_dataset.lower() in self.NATS_datasets: 
             self._dataset = new_dataset
         else: 
@@ -36,8 +40,22 @@ class NATSInterface:
         return len(self._api)
     
     def __getitem__(self, idx:int) -> TinyNetwork: 
-        """Returns untrained network corresponding to index `idx`"""
-        self.query_index(idx=idx, trained_weights=False)
+        """Returns (untrained) network corresponding to index `idx`"""
+        return self.query_with_index(idx=idx, trained_weights=False)
+
+    def __iter__(self):
+        """Iterator method"""
+        self.iteration_index = 0
+        return self
+
+    def __next__(self):
+        if self.iteration_index >= self.__len__():
+            raise StopIteration
+        # access current element 
+        net = self[self.iteration_index]
+        # update the iteration index
+        self.iteration_index += 1
+        return net
     
     def nats_ops(self):
         return {'skip_connect', 'nor_conv_1x1', 'nor_conv_3x3', 'none', 'avg_pool_3x3'}
@@ -48,7 +66,8 @@ class NATSInterface:
         trained_weights:bool=False, 
         return_cell_structure:bool=False) -> Union[TinyNetwork, str]: 
         """This function returns the TinyNetwork object asssociated to index `idx`. The returned network
-        is either trained or not with respect to `trained_weights`.
+        is either trained or not with respect to `trained_weights`. 
+        Returning trained models require the additional download of 15K+ architectures, so make sure it is actually essential.
 
         Args:
             idx (int): Numerical index of the network to be returned.
@@ -56,8 +75,8 @@ class NATSInterface:
             return_cell_structure (bool, optional): Whether or not to return the cell-structure for the considered network. Defaults to False.
         
         Returns:
-            Union[TinyNetwork, str]: Either untrained or trained network corresponding to index idx. Optionally, the
-                                      string representing the network cell structure is returned too.
+            Union[TinyNetwork, str]: Either untrained or trained network corresponding to index idx. 
+                                     Optionally, the string representing the network cell structure is returned too.
         """
         net_config = self._api.get_net_config(index=idx, dataset=self.dataset)
         tinynet = get_cell_based_tiny_net(config=net_config)
@@ -184,7 +203,7 @@ class NATSInterface:
         self, 
         n_samples:int=10) -> Tuple[List, List]:
         """Generate a group of architectures chosen at random"""
-        idxs = [self._api.random() for _ in range(n_samples)]
+        idxs = np.random.choice(self.__len__(), size=n_samples, replace=False)
         tinynets = [self.query_with_index(i)[0] for i in idxs]
         cell_structures = [self.query_with_index(i)[1] for i in idxs]
         # return tinynets and cell_structures_string
