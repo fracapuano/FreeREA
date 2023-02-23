@@ -26,3 +26,9 @@ all_metrics = [
     compute_logsynflow,
     compatible_skipped_layers
 ]
+
+metrics_names = [
+    "naswot", 
+    "log-synflow",
+    "portion-skipped-layers"
+]
