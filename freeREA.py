@@ -1,7 +1,7 @@
 from commons.nats_interface import NATSInterface
 from commons.genetics import Genetic, Population, Individual
 from commons.utils import get_project_root
-from commons.dataset import DataSet
+from commons.dataset import Dataset
 from typing import Iterable, Callable
 from tqdm import tqdm
 from metrics.naswot import compute_naswot as naswot
@@ -11,7 +11,7 @@ import time
 
 """TODO: Args for number of generations and number of generations"""
 
-dataset = DataSet(name="cifar10")
+dataset = Dataset(name="cifar10")
 images = dataset.random_examples()
 
 def score_naswot(individual:Individual): 
@@ -32,7 +32,7 @@ def score_skipped(individual:Individual):
         individual.skip_score = skipped_layers(individual.genotype)
     return individual
 
-def score_population(population:Population, scores:Iterable[Callable]): 
+def score_population(population:Population, scores:Iterable[Callable], lookup:bool=True): 
     """This function score individuals based on scoring functions in scores"""
     for score_function in scores: 
         population.apply_on_individuals(function=score_function, inplace=True)
