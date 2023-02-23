@@ -36,10 +36,10 @@ def compute_naswot(
             if isinstance(m, nn.ReLU):  # naswot is defined for ReLU only layers
                 hooks.append(m.register_forward_hook(naswot_hook))  # register naswot hook for ReLU layers
 
-        net.double().to(device)
+        net.to(device)
         inputs = inputs.to(device)
         # populating cs with the ReLU embeddings
-        _ = net(inputs.double())
+        _ = net(inputs)
 
         # removing hooks once they have been used
         for h in hooks:
