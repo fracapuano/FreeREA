@@ -14,7 +14,8 @@ class Individual():
     def __init__(
         self, 
         net:TinyNetwork, 
-        genotype:list, 
+        genotype:list,
+        index:int, 
         age:int=0,
         dataset:str="cifar10", 
         searchspace_interface:object=None):
@@ -22,6 +23,7 @@ class Individual():
         self.scores = {}
         self.net = net
         self._genotype = genotype
+        self.index=index
         self.age = age
 
         self._fitness = 0
@@ -305,11 +307,11 @@ class Population:
 
 def generate_population(searchspace_interface:NATSInterface, individual:Individual, n_individuals:int=20)->list: 
     """Generate a population of individuals"""
-    # at first generate full architectures and cell-structure
-    architectures, cells = searchspace_interface.generate_random_samples(n_samples=n_individuals)
+    # at first generate full architectures, cell-structure and unique network indices
+    architectures, cells, indices = searchspace_interface.generate_random_samples(n_samples=n_individuals)
     
     # mapping strings to list of genes (~genome)
     genotypes = map(lambda cell: architecture_to_genotype(cell), cells)
     # turn full architecture and cell-structure into genetic population individual
-    population = [individual(net=net, genotype=genotype) for net, genotype in zip(architectures, genotypes)]
+    population = [individual(net=net, genotype=genotype, index=index) for net, genotype, index in zip(architectures, genotypes, indices)]
     return population

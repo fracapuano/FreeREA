@@ -206,5 +206,5 @@ class NATSInterface:
         idxs = np.random.choice(self.__len__(), size=n_samples, replace=False)
         tinynets = [self.query_with_index(i)[0] for i in idxs]
         cell_structures = [self.query_with_index(i)[1] for i in idxs]
-        # return tinynets and cell_structures_string
-        return tinynets, cell_structures
+        # return tinynets, cell_structures_string and the unique indices of the networks
+        return tinynets, cell_structures, idxs
