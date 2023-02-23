@@ -39,6 +39,11 @@ class Individual():
         genotype_arch_str = genotype_to_architecture(self.genotype)
         self.net, _ = self.interface.query_with_architecture(architecture_string=genotype_arch_str)
 
+    def update_idx(self):
+        """Over-writes index field in light of genotype"""
+        genotype_arch_str = genotype_to_architecture(self.genotype)
+        self.index = self.interface.query_index_by_architecture(architecture_string=genotype_arch_str)
+
     @property
     def genotype(self): 
         return self._genotype
@@ -51,6 +56,7 @@ class Individual():
 
         self._genotype = new_genotype
         self.update_net()
+        self.update_idx()
 
     @property
     def fitness(self): 
@@ -114,7 +120,7 @@ class Genetic:
             # overwriting the mutant gene with a new one
             mutant_genotype[mutant_locus] = np.random.choice(a=list(mutations)) + f"~{level}"
 
-        mutant_individual = Individual(net=None, genotype=None)
+        mutant_individual = Individual(net=None, genotype=None, index=None)
         mutant_individual.update_genotype(mutant_genotype)
 
         return mutant_individual
@@ -137,7 +143,7 @@ class Genetic:
         else:
             recombinant_genotype = chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:])
         
-        recombinant = Individual(net=None, genotype=None)
+        recombinant = Individual(net=None, genotype=None, index=None)
         recombinant.update_genotype(list(recombinant_genotype))
 
         return recombinant
@@ -187,19 +193,23 @@ class Population:
         for individual in self.individuals: 
             individual.overwrite_fitness(fitness_function(individual))
     
-    def apply_on_individuals(self, function:Callable, inplace:bool=True)->Union[Iterable, None]: 
+    def apply_on_individuals(self, function:Callable, inplace:bool=True, lookup_table:np.ndarray=None)->Union[Iterable, None]: 
         """Applies a function on each individual in the population
         
         Args: 
             function (Callable): function to apply on each individual. Must return an object of class Individual.
             inplace (bool, optional): Whether to apply the function on the individuals in current population or
                                       on a copy of these.
+            lookup (bool, option): Whether to obtain the score of each metric from a lookup table.
         Returns: 
             Union[Iterable, None]: Iterable when inplace=False represents the individuals with function applied.
                                    None represents the output when inplace=True (hence function is applied on the
                                    actual population.
         """
-        modified_individuals = [function(individual) for individual in copy(self._population)]
+        if lookup_table is not None:
+            modified_individuals = [function(individual, lookup_table) for individual in copy(self._population)]
+        else:
+            modified_individuals = [function(individual) for individual in copy(self._population)]
         if inplace:
             self.update_population(new_population=modified_individuals)
         else:

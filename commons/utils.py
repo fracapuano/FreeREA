@@ -1,6 +1,19 @@
 from pathlib import Path
 from itertools import chain
 from typing import List
+import numpy as np
+
+def read_lookup_table(dataset:str="cifar100"):
+    """
+    Returns the lookup table for the corresponding dataset
+    """
+    if dataset not in ["cifar10", "cifar100", "ImageNet16-120"]:
+        if 'imagenet' not in dataset.lower():
+            raise ValueError('Please specify a valid dataset. Should be one of cifar10, cifar100, ImageNet')
+        else:
+            dataset = 'ImageNet16-120'
+    lookup_table = np.loadtxt(f'cachedmetrics/{dataset}_cachedmetrics.txt', skiprows=1)
+    return lookup_table
 
 def get_project_root(): 
     """
