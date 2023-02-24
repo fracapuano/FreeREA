@@ -193,13 +193,11 @@ class Population:
         for individual in self.individuals: 
             individual.overwrite_fitness(fitness_function(individual))
     
-    def apply_on_individuals(self, function:Callable, inplace:bool=True, lookup_table:np.ndarray=None)->Union[Iterable, None]: 
+    def apply_on_individuals(self, function:Callable, lookup_table:np.ndarray=None)->Union[Iterable, None]: 
         """Applies a function on each individual in the population
         
         Args: 
             function (Callable): function to apply on each individual. Must return an object of class Individual.
-            inplace (bool, optional): Whether to apply the function on the individuals in current population or
-                                      on a copy of these.
             lookup (bool, option): Whether to obtain the score of each metric from a lookup table.
         Returns: 
             Union[Iterable, None]: Iterable when inplace=False represents the individuals with function applied.
@@ -207,13 +205,9 @@ class Population:
                                    actual population.
         """
         if lookup_table is not None:
-            modified_individuals = [function(individual, lookup_table) for individual in copy(self._population)]
+            self._population = [function(individual, lookup_table) for individual in self._population]
         else:
-            modified_individuals = [function(individual) for individual in copy(self._population)]
-        if inplace:
-            self.update_population(new_population=modified_individuals)
-        else:
-            return modified_individuals 
+            self._population = [function(individual) for individual in self._population]
 
     def set_extremes(self, score:str):
         """Set the maximal&minimal value in the population for the score 'score' (must be a class attribute)"""
@@ -233,27 +227,24 @@ class Population:
         try:
             min_value, max_value = getattr(self, f"min_{score}"), getattr(self, f"max_{score}")
             # mapping score values in the [0,1] range using min-max normalization
-            modified_individuals = copy(self.individuals)
-
             def minmax_individual(individual:Individual):
                 """Normalizes in the [0,1] range the value of a given score"""
-                new_individual = copy(individual)
-                if getattr(new_individual, score) > 1: # only remapping elements not in the [0,1] range
+                if getattr(individual, score) > 1: # only remapping elements not in the [0,1] range
                     setattr(
-                        new_individual,
+                        individual,
                         score, 
                         (getattr(individual, score) - min_value) / (max_value - min_value) if max_value != min_value else 0
                         )
                 else:
                     pass
-                return new_individual
+                return individual
 
             # normalizing
             new_population = list(map(
                 # mapping each score value in the [0,1] range considering population-wise metrics
                 minmax_individual,
                 # looping in all individuals
-                modified_individuals
+                self.individuals
             ))
 
             if inplace: 
@@ -271,7 +262,7 @@ class Population:
             individual.age += 1
             return individual
 
-        self.apply_on_individuals(function=individuals_ageing, inplace=True)
+        self.apply_on_individuals(function=individuals_ageing)
     
     def add_to_population(self, new_individuals:Iterable[Individual]): 
         """Add new_individuals to population"""

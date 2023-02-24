@@ -11,7 +11,7 @@ import numpy as np
 
 """TODO: Args for number of generations and number of generations"""
 
-dataset = Dataset(name="cifar10")
+dataset = Dataset(name="imagenet")
 images = dataset.random_examples()
 
 def score_naswot(individual:Individual, lookup_table:np.ndarray=None): 
@@ -44,7 +44,7 @@ def score_skipped(individual:Individual, lookup_table:np.ndarray=None):
 def score_population(population:Population, scores:Iterable[Callable], lookup_table:np.ndarray=None): 
     """This function score individuals based on scoring functions in scores"""
     for score_function in scores: 
-        population.apply_on_individuals(function=score_function, inplace=True, lookup_table=lookup_table)
+        population.apply_on_individuals(function=score_function, lookup_table=lookup_table)
 
 def fitness_score(individual:Individual)->float: 
     """Sums the three scores to obtain final expression for fitness"""
@@ -123,4 +123,4 @@ class FreeREA:
         return result
 
 if __name__=="__main__": 
-    solve()
+    best_individual = solve()
