@@ -1,6 +1,6 @@
 from commons.nats_interface import NATSInterface
 from commons.genetics import Genetic, Population, Individual
-from commons.utils import get_project_root, read_lookup_table, read_test_metrics
+from commons.utils import get_project_root, read_lookup_table, read_test_metrics, load_images
 from commons.dataset import Dataset
 from typing import Iterable, Callable
 from tqdm import tqdm
@@ -11,8 +11,10 @@ import numpy as np
 
 """TODO: Args for number of generations and number of generations"""
 
-dataset = Dataset(name="cifar100")
-images = dataset.random_examples()
+# dataset = Dataset(name="cifar100")
+# images = dataset.random_examples()
+dataset = "cifar100"
+images = load_images(dataset=dataset)
 
 def score_naswot(individual:Individual, lookup_table:np.ndarray=None): 
     """Scores each individual with respect to the naswot score"""
@@ -54,9 +56,9 @@ def fitness_score(individual:Individual)->float:
 def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True): 
     # instantiating a NATSInterface object
     NATS_PATH = str(get_project_root()) + "/archive/NATS-tss-v1_0-3ffb9-simple/"
-    nats = NATSInterface(path=NATS_PATH, dataset=dataset.name)
+    nats = NATSInterface(path=NATS_PATH, dataset=dataset)
     # read the lookup table
-    lookup_table = read_lookup_table(dataset=dataset.name) 
+    lookup_table = read_lookup_table(dataset=dataset) 
 
     # initialize a random population
     population = Population(space=nats, init_population=True, n_individuals=pop_size)
@@ -115,7 +117,7 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True):
     best_individual = max(population.individuals, key=lambda ind: ind.fitness)
 
     # retrieve test accuracy for this individual
-    test_metrics = read_test_metrics(dataset=dataset.name)
+    test_metrics = read_test_metrics(dataset=dataset)
     test_accuracy = test_metrics[best_individual.index, 1]
 
     return (best_individual, test_accuracy)
