@@ -1,6 +1,6 @@
 from commons.nats_interface import NATSInterface
 from commons.genetics import Genetic, Population, Individual
-from commons.utils import get_project_root, read_lookup_table
+from commons.utils import get_project_root, read_lookup_table, read_test_metrics
 from commons.dataset import Dataset
 from typing import Iterable, Callable
 from tqdm import tqdm
@@ -11,7 +11,7 @@ import numpy as np
 
 """TODO: Args for number of generations and number of generations"""
 
-dataset = Dataset(name="imagenet")
+dataset = Dataset(name="cifar100")
 images = dataset.random_examples()
 
 def score_naswot(individual:Individual, lookup_table:np.ndarray=None): 
@@ -112,7 +112,13 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True):
         # overwrite population
         pop = population.individuals
 
-    return max(population.individuals, key=lambda ind: ind.fitness)
+    best_individual = max(population.individuals, key=lambda ind: ind.fitness)
+
+    # retrieve test accuracy for this individual
+    test_metrics = read_test_metrics(dataset=dataset.name)
+    test_accuracy = test_metrics[best_individual.index, 1]
+
+    return (best_individual, test_accuracy)
 
 class FreeREA: 
     def __init__(self):
@@ -123,4 +129,10 @@ class FreeREA:
         return result
 
 if __name__=="__main__": 
-    best_individual = solve()
+    best_individual, test_accuracy = solve()
+    print(f"Best Individual: {best_individual.genotype}, with the following scores:")
+    print(f'    "naswot_score = {best_individual.naswot_score}')
+    print(f'    "logsynflow_score = {best_individual.logsynflow_score}')
+    print(f'    "skip_score = {best_individual.skip_score}')
+    print(f'Its test accuracy is: {test_accuracy}')
+    print(':)')
