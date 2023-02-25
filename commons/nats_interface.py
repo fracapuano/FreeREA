@@ -131,6 +131,24 @@ class NATSInterface:
                 return tinynet.load_state_dict(next(iter(params.values())))
             else: 
                 return tinynet
+
+    def query_index_by_architecture(
+        self, 
+        architecture_string:str) -> float:
+        """Query the index of an architecture in the search space.
+
+        Args:
+            architecture_string (str): string of the architecture 
+
+        Returns:
+            float: The index of the architcture
+        """
+        if not cellstructure_isvalid(input_str=architecture_string): 
+            raise ValueError(f"Architecture {architecture_string} is not valid in NATS search space!")
+
+        architecture_idx = self._api.query_index_by_arch(arch=architecture_string)
+
+        return architecture_idx
     
     def query(
         self, 
@@ -206,5 +224,5 @@ class NATSInterface:
         idxs = np.random.choice(self.__len__(), size=n_samples, replace=False)
         tinynets = [self.query_with_index(i)[0] for i in idxs]
         cell_structures = [self.query_with_index(i)[1] for i in idxs]
-        # return tinynets and cell_structures_string
-        return tinynets, cell_structures
+        # return tinynets, cell_structures_string and the unique indices of the networks
+        return tinynets, cell_structures, idxs

@@ -14,7 +14,8 @@ class Individual():
     def __init__(
         self, 
         net:TinyNetwork, 
-        genotype:list, 
+        genotype:list,
+        index:int, 
         age:int=0,
         dataset:str="cifar10", 
         searchspace_interface:object=None):
@@ -22,6 +23,7 @@ class Individual():
         self.scores = {}
         self.net = net
         self._genotype = genotype
+        self.index=index
         self.age = age
 
         self._fitness = 0
@@ -37,6 +39,11 @@ class Individual():
         genotype_arch_str = genotype_to_architecture(self.genotype)
         self.net, _ = self.interface.query_with_architecture(architecture_string=genotype_arch_str)
 
+    def update_idx(self):
+        """Over-writes index field in light of genotype"""
+        genotype_arch_str = genotype_to_architecture(self.genotype)
+        self.index = self.interface.query_index_by_architecture(architecture_string=genotype_arch_str)
+
     @property
     def genotype(self): 
         return self._genotype
@@ -49,6 +56,7 @@ class Individual():
 
         self._genotype = new_genotype
         self.update_net()
+        self.update_idx()
 
     @property
     def fitness(self): 
@@ -112,7 +120,7 @@ class Genetic:
             # overwriting the mutant gene with a new one
             mutant_genotype[mutant_locus] = np.random.choice(a=list(mutations)) + f"~{level}"
 
-        mutant_individual = Individual(net=None, genotype=None)
+        mutant_individual = Individual(net=None, genotype=None, index=None)
         mutant_individual.update_genotype(mutant_genotype)
 
         return mutant_individual
@@ -135,7 +143,7 @@ class Genetic:
         else:
             recombinant_genotype = chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:])
         
-        recombinant = Individual(net=None, genotype=None)
+        recombinant = Individual(net=None, genotype=None, index=None)
         recombinant.update_genotype(list(recombinant_genotype))
 
         return recombinant
@@ -185,23 +193,21 @@ class Population:
         for individual in self.individuals: 
             individual.overwrite_fitness(fitness_function(individual))
     
-    def apply_on_individuals(self, function:Callable, inplace:bool=True)->Union[Iterable, None]: 
+    def apply_on_individuals(self, function:Callable, lookup_table:np.ndarray=None)->Union[Iterable, None]: 
         """Applies a function on each individual in the population
         
         Args: 
             function (Callable): function to apply on each individual. Must return an object of class Individual.
-            inplace (bool, optional): Whether to apply the function on the individuals in current population or
-                                      on a copy of these.
+            lookup (bool, option): Whether to obtain the score of each metric from a lookup table.
         Returns: 
             Union[Iterable, None]: Iterable when inplace=False represents the individuals with function applied.
                                    None represents the output when inplace=True (hence function is applied on the
                                    actual population.
         """
-        modified_individuals = [function(individual) for individual in copy(self._population)]
-        if inplace:
-            self.update_population(new_population=modified_individuals)
+        if lookup_table is not None:
+            self._population = [function(individual, lookup_table) for individual in self._population]
         else:
-            return modified_individuals 
+            self._population = [function(individual) for individual in self._population]
 
     def set_extremes(self, score:str):
         """Set the maximal&minimal value in the population for the score 'score' (must be a class attribute)"""
@@ -221,27 +227,24 @@ class Population:
         try:
             min_value, max_value = getattr(self, f"min_{score}"), getattr(self, f"max_{score}")
             # mapping score values in the [0,1] range using min-max normalization
-            modified_individuals = copy(self.individuals)
-
             def minmax_individual(individual:Individual):
                 """Normalizes in the [0,1] range the value of a given score"""
-                new_individual = copy(individual)
-                if getattr(new_individual, score) > 1: # only remapping elements not in the [0,1] range
+                if getattr(individual, score) > 1: # only remapping elements not in the [0,1] range
                     setattr(
-                        new_individual,
+                        individual,
                         score, 
                         (getattr(individual, score) - min_value) / (max_value - min_value) if max_value != min_value else 0
                         )
                 else:
                     pass
-                return new_individual
+                return individual
 
             # normalizing
             new_population = list(map(
                 # mapping each score value in the [0,1] range considering population-wise metrics
                 minmax_individual,
                 # looping in all individuals
-                modified_individuals
+                self.individuals
             ))
 
             if inplace: 
@@ -259,7 +262,7 @@ class Population:
             individual.age += 1
             return individual
 
-        self.apply_on_individuals(function=individuals_ageing, inplace=True)
+        self.apply_on_individuals(function=individuals_ageing)
     
     def add_to_population(self, new_individuals:Iterable[Individual]): 
         """Add new_individuals to population"""
@@ -305,11 +308,11 @@ class Population:
 
 def generate_population(searchspace_interface:NATSInterface, individual:Individual, n_individuals:int=20)->list: 
     """Generate a population of individuals"""
-    # at first generate full architectures and cell-structure
-    architectures, cells = searchspace_interface.generate_random_samples(n_samples=n_individuals)
+    # at first generate full architectures, cell-structure and unique network indices
+    architectures, cells, indices = searchspace_interface.generate_random_samples(n_samples=n_individuals)
     
     # mapping strings to list of genes (~genome)
     genotypes = map(lambda cell: architecture_to_genotype(cell), cells)
     # turn full architecture and cell-structure into genetic population individual
-    population = [individual(net=net, genotype=genotype) for net, genotype in zip(architectures, genotypes)]
+    population = [individual(net=net, genotype=genotype, index=index) for net, genotype, index in zip(architectures, genotypes, indices)]
     return population
