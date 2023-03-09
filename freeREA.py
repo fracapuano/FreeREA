@@ -13,7 +13,7 @@ import numpy as np
 
 # dataset = Dataset(name="cifar100")
 # images = dataset.random_examples()
-dataset = "cifar100"
+dataset = "imagenet"
 images = load_images(dataset=dataset)
 
 def score_naswot(individual:Individual, lookup_table:np.ndarray=None): 
