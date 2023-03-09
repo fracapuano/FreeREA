@@ -6,9 +6,11 @@ import random
 import pickle
 
 def load_images(dataset:str='cifar100', batchsize:int=32):
-    if dataset not in ["cifar10", "cifar100", "ImageNet16-120"]:
+    if dataset not in ["cifar10", "cifar100", "imagenet"]:
         if 'imagenet' not in dataset.lower():
             raise ValueError('Please specify a valid dataset. Should be one of cifar10, cifar100, ImageNet')
+        else:
+            dataset = 'imagenet'
     if batchsize not in [32, 64]:
             raise ValueError(f"Batch size: {batchsize} not accepted. Can only be 32 or 64.")
     random_batch = random.randrange(10)
