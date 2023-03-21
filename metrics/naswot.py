@@ -5,14 +5,18 @@ import torch.nn as nn
 def compute_naswot(
     net: nn.Module, 
     inputs: torch.Tensor, 
-    device: torch.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")) -> float:
+    device: torch.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    method: str = 'logdet') -> float:
     """Computes the NASWOT score for a given network
     
     Args: 
         net (nn.Module): Actual network to be scored according to naswot.
         inputs (torch.Tensor): Tensor of size `batch_size` corresponding to the images forwarded as input.
         device (torch.device): Either CPU or GPU device.
+        method (str): one between 'logdet' and 'corr'. Defaults to 'logdet'
     """
+    if method not in ['logdet', 'corr']:
+        raise ValueError('Method not implement. Please pick one between logdet and corr')
     # gradients are completely useless here
     with torch.no_grad():
         # result of hooks
@@ -61,5 +65,20 @@ def compute_naswot(
         # hamming distance is number of disagreements = size of array - number of agreeements
         k += not_full_code_float @ not_full_code_float.t()
         # naswot score computed on k
-        naswot_score = torch.slogdet(k).logabsdet.item()
+        if method == 'logdet':
+            naswot_score = torch.slogdet(k).logabsdet.item()
+        elif method == 'corr':
+            k = k.double()
+            # implemented according to: https://math.stackexchange.com/a/1393907
+            r1 = torch.tensor(range(1, k.shape[0] + 1)).double()
+            r2 = torch.tensor([i*i for i in range(1, k.shape[0] + 1)]).double()
+            j = torch.ones(k.shape[0]).double()
+            n = torch.matmul(torch.matmul(j, k), j.T).double()
+            x = torch.matmul(torch.matmul(r1, k), j.T)
+            y = torch.matmul(torch.matmul(j, k), r1.T)
+            x2 = torch.matmul(torch.matmul(r2, k), j.T)
+            y2 = torch.matmul(torch.matmul(j, k), r2.T)
+            xy = torch.matmul(torch.matmul(r1, k), r1.T)
+            
+            naswot_score = (n * xy - x * y) / (torch.sqrt(n * x2 - x**2) * torch.sqrt(n * y2 - y**2))
         return naswot_score
