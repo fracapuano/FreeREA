@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from commons.utils import correlation
 
 def compute_naswot(
     net: nn.Module, 
@@ -68,17 +68,6 @@ def compute_naswot(
         if method == 'logdet':
             naswot_score = torch.slogdet(k).logabsdet.item()
         elif method == 'corr':
-            k = k.double()
-            # implemented according to: https://math.stackexchange.com/a/1393907
-            r1 = torch.tensor(range(1, k.shape[0] + 1)).double()
-            r2 = torch.tensor([i*i for i in range(1, k.shape[0] + 1)]).double()
-            j = torch.ones(k.shape[0]).double()
-            n = torch.matmul(torch.matmul(j, k), j.T).double()
-            x = torch.matmul(torch.matmul(r1, k), j.T)
-            y = torch.matmul(torch.matmul(j, k), r1.T)
-            x2 = torch.matmul(torch.matmul(r2, k), j.T)
-            y2 = torch.matmul(torch.matmul(j, k), r2.T)
-            xy = torch.matmul(torch.matmul(r1, k), r1.T)
+            naswot_score = correlation(k)
             
-            naswot_score = (n * xy - x * y) / (torch.sqrt(n * x2 - x**2) * torch.sqrt(n * y2 - y**2))
         return naswot_score

@@ -4,6 +4,7 @@ from typing import List
 import numpy as np
 import random
 import pickle
+import torch
 
 def load_images(dataset:str='cifar100', batch_size:int=32):
     if dataset not in ["cifar10", "cifar100", "imagenet"]:
@@ -93,3 +94,28 @@ def genotype_is_valid(genotype:List)->bool:
     subops = chain(*[op.split("~") for op in genotype]) # divide into operation and node
     is_valid = all([(n in all_ops) or (n in all_numbers) for n in subops]) # check if the full string is valid
     return is_valid
+
+def correlation(tensor:torch.tensor)->float:
+    """Compute correlation coefficient on a tensor, based on
+    https://math.stackexchange.com/a/1393907
+
+    Args:
+        tensor (torch.tensor):
+
+    Returns:
+        float: Pearson correlation coefficient
+    """
+    tensor = tensor.double()
+    r1 = torch.tensor(range(1, tensor.shape[0] + 1)).double()
+    r2 = torch.tensor([i*i for i in range(1, tensor.shape[0] + 1)]).double()
+    j = torch.ones(tensor.shape[0]).double()
+    n = torch.matmul(torch.matmul(j, tensor), j.T).double()
+    x = torch.matmul(torch.matmul(r1, tensor), j.T)
+    y = torch.matmul(torch.matmul(j, tensor), r1.T)
+    x2 = torch.matmul(torch.matmul(r2, tensor), j.T)
+    y2 = torch.matmul(torch.matmul(j, tensor), r2.T)
+    xy = torch.matmul(torch.matmul(r1, tensor), r1.T)
+    
+    corr = (n * xy - x * y) / (torch.sqrt(n * x2 - x**2) * torch.sqrt(n * y2 - y**2))
+
+    return corr
