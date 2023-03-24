@@ -58,7 +58,8 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True):
     NATS_PATH = str(get_project_root()) + "/archive/NATS-tss-v1_0-3ffb9-simple/"
     nats = NATSInterface(path=NATS_PATH, dataset=dataset)
     # read the lookup table
-    lookup_table = read_lookup_table(dataset=dataset) 
+    if lookup:
+        lookup_table = read_lookup_table(dataset=dataset) 
 
     # initialize a random population
     population = Population(space=nats, init_population=True, n_individuals=pop_size)
@@ -131,7 +132,7 @@ class FreeREA:
         return result
 
 if __name__=="__main__": 
-    best_individual, test_accuracy = solve()
+    best_individual, test_accuracy = solve(lookup=False)
     print(f"Best Individual: {best_individual.genotype}, with the following scores:")
     print(f'    "naswot_score = {best_individual.naswot_score}')
     print(f'    "logsynflow_score = {best_individual.logsynflow_score}')
