@@ -18,7 +18,8 @@ images = load_images(dataset=dataset)
 
 def score_naswot(individual:Individual, lookup_table:np.ndarray=None): 
     """Scores each individual with respect to the naswot score"""
-    if not hasattr(individual, "naswot_score"):     
+    print(individual.index)
+    if not hasattr(individual, "naswot_score"):  
         if lookup_table is not None:
             individual.naswot_score = lookup_table[individual.index, 1]
         else:
@@ -132,7 +133,7 @@ class FreeREA:
         return result
 
 if __name__=="__main__": 
-    best_individual, test_accuracy = solve(lookup=False)
+    best_individual, test_accuracy = solve()
     print(f"Best Individual: {best_individual.genotype}, with the following scores:")
     print(f'    "naswot_score = {best_individual.naswot_score}')
     print(f'    "logsynflow_score = {best_individual.logsynflow_score}')
