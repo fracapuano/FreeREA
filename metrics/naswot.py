@@ -16,7 +16,7 @@ def compute_naswot(
         method (str): one between 'logdet' and 'corr'. Defaults to 'logdet'
     """
     if method not in ['logdet', 'corr']:
-        raise ValueError('Method not implement. Please pick one between logdet and corr')
+        raise ValueError('Method not implemented. Please pick one between logdet and corr')
     # gradients are completely useless here
     with torch.no_grad():
         # result of hooks
