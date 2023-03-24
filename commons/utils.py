@@ -118,4 +118,4 @@ def correlation(tensor:torch.tensor)->float:
     
     corr = (n * xy - x * y) / (torch.sqrt(n * x2 - x**2) * torch.sqrt(n * y2 - y**2))
 
-    return corr
+    return corr.item()
