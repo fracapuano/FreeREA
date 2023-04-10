@@ -26,15 +26,6 @@ def score_naswot(individual:Individual, lookup_table:np.ndarray=None):
             individual.naswot_score = naswot(individual.net, inputs=images)
     return individual
 
-def score_corr(individual:Individual, lookup_table:np.ndarray=None): 
-    """Scores each individual with respect to the naswot score"""
-    if not hasattr(individual, "corr"):  
-        if lookup_table is not None:
-            individual.corr = lookup_table[individual.index, 1]
-        else:
-            individual.corr = corr(individual.net, inputs=images)
-    return individual
-
 def score_logsynflow(individual:Individual, lookup_table:np.ndarray=None): 
     """Scores each individual with respect to the log-synflow score"""
     if not hasattr(individual, "logsynflow_score"): 
