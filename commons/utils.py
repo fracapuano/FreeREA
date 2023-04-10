@@ -2,6 +2,7 @@ from pathlib import Path
 from itertools import chain
 from typing import List
 import numpy as np
+import pandas as pd
 import random
 import pickle
 import torch
@@ -15,6 +16,7 @@ def load_images(dataset:str='cifar100', batch_size:int=32):
     if batch_size not in [32, 64]:
             raise ValueError(f"Batch size: {batch_size} not accepted. Can only be 32 or 64.")
     random_batch = random.randrange(10)
+    # random_batch = 8
     with open(f'data/{dataset}__batch{batch_size}_{random_batch}', 'rb') as pickle_file:
         print(f'Batch #{random_batch} loaded.')
         images = pickle.load(pickle_file)
@@ -45,6 +47,17 @@ def read_test_metrics(dataset:str="cifar100"):
     lookup_table = np.loadtxt(f'cachedmetrics/{dataset}_TrainTestMetrics.txt', skiprows=1)
     return lookup_table
 
+def load_minmax(dataset:str):
+    """
+    Given a dataset, returns the minimum and the maximum for each metric
+    """
+    if dataset not in ["cifar10", "cifar100", "ImageNet16-120"]:
+        if 'imagenet' not in dataset.lower():
+            raise ValueError('Please specify a valid dataset. Should be one of cifar10, cifar100, ImageNet')
+        else:
+            dataset = 'ImageNet16-120'
+    
+    return pd.read_csv(f'cachedmetrics/{dataset}_minmax.csv')
 
 def get_project_root(): 
     """
