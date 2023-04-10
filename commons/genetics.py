@@ -219,42 +219,36 @@ class Population:
         setattr(self, f"min_{score}", min_value)
 
 
-    def normalize_scores(self, score:str, inplace:bool=True)->Union[Iterable, None]: 
+    def normalize_scores(self, score:str, extreme_scores:pd.DataFrame, inplace:bool=True)->Union[Iterable, None]: 
         """Normalizes the scores (stored as class attributes) of each individual with respect to the maximal"""
         if not isinstance(score, str): 
             raise ValueError(f"Input score '{score}' is not a string!")
 
-        try:
-            min_value, max_value = getattr(self, f"min_{score}"), getattr(self, f"max_{score}")
-            # mapping score values in the [0,1] range using min-max normalization
-            def minmax_individual(individual:Individual):
-                """Normalizes in the [0,1] range the value of a given score"""
-                if getattr(individual, score) > 1: # only remapping elements not in the [0,1] range
-                    setattr(
-                        individual,
-                        score, 
-                        (getattr(individual, score) - min_value) / (max_value - min_value) if max_value != min_value else 0
-                        )
-                else:
-                    pass
-                return individual
+        min_value = extreme_scores.loc[0][score]
+        max_value = extreme_scores.loc[1][score]
+        # mapping score values in the [0,1] range using min-max normalization
+        def minmax_individual(individual:Individual):
+            """Normalizes in the [0,1] range the value of a given score"""
+            current_score = getattr(individual, score)
+            setattr(
+                individual,
+                score, 
+                (current_score - min_value) / (max_value - min_value) if current_score >= min_value else 1e-6
+                )
+            return individual
 
-            # normalizing
-            new_population = list(map(
-                # mapping each score value in the [0,1] range considering population-wise metrics
-                minmax_individual,
-                # looping in all individuals
-                self.individuals
-            ))
+        # normalizing
+        new_population = list(map(
+            # mapping each score value in the [0,1] range considering population-wise metrics
+            minmax_individual,
+            # looping in all individuals
+            self.individuals
+        ))
 
-            if inplace: 
-                self.update_population(new_population=new_population)
-            else: 
-                return new_population
-            
-        except AttributeError:  # extremes attribute not present... sorting&setting 
-            self.set_extremes(score=score)
-            self.normalize_scores(score)
+        if inplace: 
+            self.update_population(new_population=new_population)
+        else: 
+            return new_population
     
     def age(self): 
         """Embeds ageing into the process"""
