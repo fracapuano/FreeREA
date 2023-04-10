@@ -1,22 +1,18 @@
 import torch
 import torch.nn as nn
-from commons.utils import correlation
 
 def compute_naswot(
     net: nn.Module, 
     inputs: torch.Tensor, 
-    device: torch.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
-    method: str = 'logdet') -> float:
+    device: torch.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    ) -> float:
     """Computes the NASWOT score for a given network
     
     Args: 
         net (nn.Module): Actual network to be scored according to naswot.
         inputs (torch.Tensor): Tensor of size `batch_size` corresponding to the images forwarded as input.
         device (torch.device): Either CPU or GPU device.
-        method (str): one between 'logdet' and 'corr'. Defaults to 'logdet'
     """
-    if method not in ['logdet', 'corr']:
-        raise ValueError('Method not implemented. Please pick one between logdet and corr')
     # gradients are completely useless here
     with torch.no_grad():
         # result of hooks
@@ -62,12 +58,11 @@ def compute_naswot(
         del full_code_float
         # mapping each False->1 / True->0
         not_full_code_float = torch.logical_not(full_code).float()
-        # hamming distance is number of disagreements = size of array - number of agreeements
+        # hamming distance is number of disagreements = size of array - number of agreements
         k += not_full_code_float @ not_full_code_float.t()
         # naswot score computed on k
-        if method == 'logdet':
-            naswot_score = torch.slogdet(k).logabsdet.item()
-        elif method == 'corr':
-            naswot_score = correlation(k)
-            
+        naswot_score = torch.slogdet(k).logabsdet.item()
+        if naswot_score == float('-inf'):
+            naswot_score = 1e-6
+        
         return naswot_score
