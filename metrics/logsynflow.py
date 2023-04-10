@@ -32,7 +32,6 @@ def linearize(net: nn.Module) -> dict:
     """
     This function stores the sign of each parameter in a given network. This is useful if one has to consider absolute
     values of weights for a given moment and then re-consider the weights themselves.
-
     :param net: Actual network
     :return: Alternative state_dict in which each element stores the sign of previous state_dict
     """
@@ -116,4 +115,3 @@ def compute_logsynflow(
     net.float()
     
     return reduce(lambda g1, g2: g1+g2, grads_abs).item()
-
