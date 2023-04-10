@@ -1,10 +1,11 @@
 from commons.nats_interface import NATSInterface
 from commons.genetics import Genetic, Population, Individual
-from commons.utils import get_project_root, read_lookup_table, read_test_metrics, load_images
+from commons.utils import get_project_root, read_lookup_table, read_test_metrics, load_images, load_minmax
 from commons.dataset import Dataset
 from typing import Iterable, Callable
 from tqdm import tqdm
 from metrics.naswot import compute_naswot as naswot
+from metrics.corr import compute_corr as corr
 from metrics.logsynflow import compute_logsynflow as logsynflow
 from metrics.skipped_layers import compute_skipped_layers as skipped_layers
 import numpy as np
@@ -13,17 +14,25 @@ import numpy as np
 
 # dataset = Dataset(name="cifar100")
 # images = dataset.random_examples()
-dataset = "imagenet"
+dataset = "cifar100"
 images = load_images(dataset=dataset)
 
 def score_naswot(individual:Individual, lookup_table:np.ndarray=None): 
     """Scores each individual with respect to the naswot score"""
-    print(individual.index)
     if not hasattr(individual, "naswot_score"):  
         if lookup_table is not None:
             individual.naswot_score = lookup_table[individual.index, 1]
         else:
             individual.naswot_score = naswot(individual.net, inputs=images)
+    return individual
+
+def score_corr(individual:Individual, lookup_table:np.ndarray=None): 
+    """Scores each individual with respect to the naswot score"""
+    if not hasattr(individual, "corr"):  
+        if lookup_table is not None:
+            individual.corr = lookup_table[individual.index, 1]
+        else:
+            individual.corr = corr(individual.net, inputs=images)
     return individual
 
 def score_logsynflow(individual:Individual, lookup_table:np.ndarray=None): 
@@ -62,6 +71,9 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True):
     if lookup:
         lookup_table = read_lookup_table(dataset=dataset) 
 
+    # load max and min
+    extreme_scores = load_minmax(dataset)
+
     # initialize a random population
     population = Population(space=nats, init_population=True, n_individuals=pop_size)
 
@@ -74,7 +86,7 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True):
         score_population(population=population, scores=scores)
     # normalizing scores before computing fitness value
     for score in ["naswot_score", "logsynflow_score", "skip_score"]: 
-        population.normalize_scores(score=score, inplace=True)  # normalize values to bring metrics in the same range
+        population.normalize_scores(score=score, inplace=True, extreme_scores=extreme_scores)  # normalize values to bring metrics in the same range
     
     # turn score in fitness value
     population.update_fitness(fitness_function=fitness_score)
@@ -105,7 +117,7 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True):
         # normalize scores in the 0-1 range
         for score in ["naswot_score", "logsynflow_score", "skip_score"]: 
             population.set_extremes(score=score)
-            population.normalize_scores(score=score, inplace=True)  # normalize values to bring metrics in the same range
+            population.normalize_scores(score=score, inplace=True, extreme_scores=extreme_scores)  # normalize values to bring metrics in the same range
         
         # compute fitness value
         population.update_fitness(fitness_score)
