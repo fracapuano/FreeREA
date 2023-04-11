@@ -219,13 +219,11 @@ class Population:
         setattr(self, f"min_{score}", min_value)
 
 
-    def normalize_scores(self, score:str, extreme_scores:pd.DataFrame, inplace:bool=True)->Union[Iterable, None]: 
+    def normalize_scores(self, score:str, extreme_scores:pd.DataFrame, normalization:str, inplace:bool=True)->Union[Iterable, None]: 
         """Normalizes the scores (stored as class attributes) of each individual with respect to the maximal"""
         if not isinstance(score, str): 
             raise ValueError(f"Input score '{score}' is not a string!")
-
-        min_value = extreme_scores.loc[0][score]
-        max_value = extreme_scores.loc[1][score]
+        
         # mapping score values in the [0,1] range using min-max normalization
         def minmax_individual(individual:Individual):
             """Normalizes in the [0,1] range the value of a given score"""
@@ -237,10 +235,30 @@ class Population:
                 )
             return individual
 
+        # mapping score values to distribution with mean 0 and std 1
+        def standardize_individual(individual:Individual):
+            """Normalizes to mean 0 and std 1"""
+            current_score = getattr(individual, score)
+            setattr(
+                individual,
+                score, 
+                (current_score - mean_value) / std_value if current_score != float("-inf") else (1e-6 - mean_value) / std_value
+                )
+            return individual
+        
+        if normalization == 'minmax':
+            min_value = extreme_scores.loc[0][score]
+            max_value = extreme_scores.loc[1][score]
+            normalization_function = minmax_individual
+        elif normalization == 'standard':
+            mean_value = extreme_scores.loc[0][score]
+            std_value = extreme_scores.loc[1][score]
+            normalization_function = standardize_individual
+
         # normalizing
         new_population = list(map(
-            # mapping each score value in the [0,1] range considering population-wise metrics
-            minmax_individual,
+            # normalize wrt every function
+            normalization_function,
             # looping in all individuals
             self.individuals
         ))

@@ -47,9 +47,15 @@ def read_test_metrics(dataset:str="cifar100"):
     lookup_table = np.loadtxt(f'cachedmetrics/{dataset}_TrainTestMetrics.txt', skiprows=1)
     return lookup_table
 
-def load_minmax(dataset:str):
-    """
-    Given a dataset, returns the minimum and the maximum for each metric
+def load_normalization(dataset:str, normalization:str):
+    """Returns the parameters for the chosen normalization on the dataset
+
+    Args:
+        dataset (str): dataset in use. Should be one of 'cifar10', 'cifar100', 'ImageNet'.
+        normalization (str): normalization to use. Should be one of 'minmax', 'standard'.
+
+    Returns:
+        pd.DataFrame: parameters for the normalization
     """
     if dataset not in ["cifar10", "cifar100", "ImageNet16-120"]:
         if 'imagenet' not in dataset.lower():
@@ -57,7 +63,7 @@ def load_minmax(dataset:str):
         else:
             dataset = 'ImageNet16-120'
     
-    return pd.read_csv(f'cachedmetrics/{dataset}_minmax.csv')
+    return pd.read_csv(f'cachedmetrics/{dataset}_{normalization}.csv')
 
 def get_project_root(): 
     """
