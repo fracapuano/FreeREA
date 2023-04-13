@@ -55,8 +55,8 @@ def fitness_score(individual:Individual)->float:
     return sum([getattr(individual, score) for score in scores])
 
 def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True, normalization:str='minmax'): 
-    if normalization not in ['minmax', 'standard']:
-        raise ValueError(f'Type of normalization: {normalization} not implemented.\nShould be one of ["minmax", "standard"]')
+    if normalization not in ['minmax', 'standard', 'dynamic']:
+        raise ValueError(f'Type of normalization: {normalization} not implemented.\nShould be one of ["minmax", "standard", "dynamic"]')
     # instantiating a NATSInterface object
     NATS_PATH = str(get_project_root()) + "/archive/NATS-tss-v1_0-3ffb9-simple/"
     nats = NATSInterface(path=NATS_PATH, dataset=dataset)
@@ -64,11 +64,11 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True, normalizat
     if lookup:
         lookup_table = read_lookup_table(dataset=dataset) 
 
-    # load max and min
-    norm_parameters = load_normalization(dataset, normalization)
+    # # load max and min
+    # norm_parameters = load_normalization(dataset, normalization)
 
     # initialize a random population
-    population = Population(space=nats, init_population=True, n_individuals=pop_size)
+    population = Population(space=nats, init_population=True, n_individuals=pop_size, normalization=normalization)
 
     scores = [score_naswot, score_logsynflow, score_skipped]
     # scoring the population based on the scoring functions defined.
@@ -79,7 +79,7 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True, normalizat
         score_population(population=population, scores=scores)
     # normalizing scores before computing fitness value
     for score in ["naswot_score", "logsynflow_score", "skip_score"]: 
-        population.normalize_scores(score=score, inplace=True, extreme_scores=norm_parameters, normalization=normalization)  # normalize values to bring metrics in the same range
+        population.normalize_scores(score=score, inplace=True)  # normalize values to bring metrics in the same range
     
     # turn score in fitness value
     population.update_fitness(fitness_function=fitness_score)
@@ -110,7 +110,7 @@ def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True, normalizat
         # normalize scores in the 0-1 range
         for score in ["naswot_score", "logsynflow_score", "skip_score"]: 
             population.set_extremes(score=score)
-            population.normalize_scores(score=score, inplace=True, extreme_scores=norm_parameters, normalization=normalization)  # normalize values to bring metrics in the same range
+            population.normalize_scores(score=score, inplace=True)  # normalize values to bring metrics in the same range
         
         # compute fitness value
         population.update_fitness(fitness_score)
