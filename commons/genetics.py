@@ -246,9 +246,9 @@ class Population:
                 min_value = getattr(self, f"min_{score}")
                 max_value = getattr(self, f"max_{score}")
             elif self.normalization == 'standard':        
-                mean_value = getattr(self, f"mean{score}")
+                mean_value = getattr(self, f"mean_{score}")
                 std_value = getattr(self, f"std_{score}")
-                
+
             # mapping score values in the [0,1] range using min-max normalization
             def minmax_individual(individual:Individual):
                 """Normalizes in the [0,1] range the value of a given score"""

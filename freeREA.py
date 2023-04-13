@@ -54,7 +54,7 @@ def fitness_score(individual:Individual)->float:
     scores = ["naswot_score", "logsynflow_score", "skip_score"]
     return sum([getattr(individual, score) for score in scores])
 
-def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True, normalization:str='minmax'): 
+def solve(max_generations:int=100, pop_size:int=25, lookup:bool=True, normalization:str='standard'): 
     if normalization not in ['minmax', 'standard', 'dynamic']:
         raise ValueError(f'Type of normalization: {normalization} not implemented.\nShould be one of ["minmax", "standard", "dynamic"]')
     # instantiating a NATSInterface object
