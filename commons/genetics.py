@@ -149,7 +149,7 @@ class Genetic:
         return recombinant
 
 class Population: 
-    def __init__(self, space:object, individual:object=Individual, init_population:Union[bool, Iterable]=True, n_individuals:int=20): 
+    def __init__(self, space:object, individual:object=Individual, init_population:Union[bool, Iterable]=True, n_individuals:int=20, normalization:str='dynamic'): 
         self.space = space
         self.individual = individual
         if init_population:
@@ -159,6 +159,13 @@ class Population:
         
         self.oldest = None
         self.worst_n = None
+        self.normalization = normalization.lower()
+        if self.normalization in ['minmax', 'standard']:
+            df_scores = pd.read_csv(f'{str(get_project_root())}/cachedmetrics/{self.space.dataset}_{normalization}.csv')
+            self.scores_dict = {
+                key: value for value, key in enumerate(df_scores.columns)
+            }
+            self.extreme_scores = df_scores.values
     
     def __iter__(self): 
         for i in self._population: 
@@ -211,38 +218,69 @@ class Population:
 
     def set_extremes(self, score:str):
         """Set the maximal&minimal value in the population for the score 'score' (must be a class attribute)"""
-        # sorting in ascending order
-        min_value = getattr(min(self.individuals, key=lambda ind: getattr(ind, score)), score)
-        max_value = getattr(max(self.individuals, key=lambda ind: getattr(ind, score)), score)
+        if self.normalization == 'dynamic':
+            # sorting in ascending order
+            min_value = getattr(min(self.individuals, key=lambda ind: getattr(ind, score)), score)
+            max_value = getattr(max(self.individuals, key=lambda ind: getattr(ind, score)), score)
+        elif self.normalization == 'minmax':
+            # extreme_scores is a 2x`number_of_scores`
+            min_value, max_value = self.extreme_scores[:, self.scores_dict[score]]
+        elif self.normalization == 'standard':
+            mean_value, std_value = self.extreme_scores[:, self.scores_dict[score]]
 
-        setattr(self, f"max_{score}", max_value)
-        setattr(self, f"min_{score}", min_value)
+        if self.normalization in ['minmax', 'dynamic']:
+            setattr(self, f"max_{score}", max_value)
+            setattr(self, f"min_{score}", min_value) 
+        else:
+            setattr(self, f"mean_{score}", mean_value)
+            setattr(self, f"std_{score}", std_value)                        
 
 
     def normalize_scores(self, score:str, inplace:bool=True)->Union[Iterable, None]: 
         """Normalizes the scores (stored as class attributes) of each individual with respect to the maximal"""
         if not isinstance(score, str): 
-            raise ValueError(f"Input score '{score}' is not a string!")
-
+            raise ValueError(f"Input score '{score}' is not a string!")    
+        
         try:
-            min_value, max_value = getattr(self, f"min_{score}"), getattr(self, f"max_{score}")
+            if self.normalization in ['minmax', 'dynamic']:
+                min_value = getattr(self, f"min_{score}")
+                max_value = getattr(self, f"max_{score}")
+            elif self.normalization == 'standard':        
+                mean_value = getattr(self, f"mean_{score}")
+                std_value = getattr(self, f"std_{score}")
+
             # mapping score values in the [0,1] range using min-max normalization
             def minmax_individual(individual:Individual):
                 """Normalizes in the [0,1] range the value of a given score"""
-                if getattr(individual, score) > 1: # only remapping elements not in the [0,1] range
-                    setattr(
-                        individual,
-                        score, 
-                        (getattr(individual, score) - min_value) / (max_value - min_value) if max_value != min_value else 0
-                        )
-                else:
-                    pass
+                current_score = getattr(individual, score)
+                setattr(
+                    individual,
+                    score, 
+                    (current_score - min_value) / (max_value - min_value) if current_score >= min_value else 1e-6
+                    )
                 return individual
+
+            # mapping score values to distribution with mean 0 and std 1
+            def standardize_individual(individual:Individual):
+                """Normalizes to mean 0 and std 1"""
+                current_score = getattr(individual, score)
+                setattr(
+                    individual,
+                    score, 
+                    (current_score - mean_value) / std_value if current_score != float("-inf") else (1e-6 - mean_value) / std_value
+                    )
+                return individual
+            
+            # set normalization function
+            if self.normalization in ['minmax', 'dynamic']:
+                normalization_function = minmax_individual
+            elif self.normalization in ['standard']:
+                normalization_function = standardize_individual
 
             # normalizing
             new_population = list(map(
-                # mapping each score value in the [0,1] range considering population-wise metrics
-                minmax_individual,
+                # normalize wrt every function
+                normalization_function,
                 # looping in all individuals
                 self.individuals
             ))
@@ -251,10 +289,10 @@ class Population:
                 self.update_population(new_population=new_population)
             else: 
                 return new_population
-            
-        except AttributeError:  # extremes attribute not present... sorting&setting 
+        except AttributeError:
             self.set_extremes(score=score)
             self.normalize_scores(score)
+    
     
     def age(self): 
         """Embeds ageing into the process"""

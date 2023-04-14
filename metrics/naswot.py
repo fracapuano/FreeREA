@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 
-
 def compute_naswot(
     net: nn.Module, 
     inputs: torch.Tensor, 
-    device: torch.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")) -> float:
+    device: torch.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    ) -> float:
     """Computes the NASWOT score for a given network
     
     Args: 
@@ -58,8 +58,11 @@ def compute_naswot(
         del full_code_float
         # mapping each False->1 / True->0
         not_full_code_float = torch.logical_not(full_code).float()
-        # hamming distance is number of disagreements = size of array - number of agreeements
+        # hamming distance is number of disagreements = size of array - number of agreements
         k += not_full_code_float @ not_full_code_float.t()
         # naswot score computed on k
         naswot_score = torch.slogdet(k).logabsdet.item()
+        if naswot_score == float('-inf'):
+            naswot_score = 1e-6
+        
         return naswot_score
