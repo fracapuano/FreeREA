@@ -6,8 +6,15 @@ import pandas as pd
 import random
 import pickle
 import torch
+import torch.nn as nn
 
-def load_images(dataset:str='cifar100', batch_size:int=32):
+def load_images(
+        dataset:str='cifar100', 
+        batch_size:int=32, 
+        with_labels:bool=False,
+        verbose:int=None
+        )->object:
+    """TODO: Add documentation."""
     if dataset not in ["cifar10", "cifar100", "imagenet"]:
         if 'imagenet' not in dataset.lower():
             raise ValueError('Please specify a valid dataset. Should be one of cifar10, cifar100, ImageNet')
@@ -15,13 +22,19 @@ def load_images(dataset:str='cifar100', batch_size:int=32):
             dataset = 'imagenet'
     if batch_size not in [32, 64]:
             raise ValueError(f"Batch size: {batch_size} not accepted. Can only be 32 or 64.")
+    # sampling one random batch randomly
     random_batch = random.randrange(10)
-    # random_batch = 8
-    with open(f'data/{dataset}__batch{batch_size}_{random_batch}', 'rb') as pickle_file:
-        print(f'Batch #{random_batch} loaded.')
-        images = pickle.load(pickle_file)
 
-    return(images)
+    with open(f'data/{dataset}__batch{batch_size}_{random_batch}', 'rb') as pickle_file:
+        images = pickle.load(pickle_file)
+        if verbose: 
+            print(f'Batch #{random_batch} loaded.')
+
+    # returning one of the random batches generated randomly
+    if with_labels:
+        return images  # returns labelled examples
+    else: 
+        return images[0]  # only returns data, with no labels
 
 def read_lookup_table(dataset:str="cifar100"):
     """
@@ -138,3 +151,18 @@ def correlation(tensor:torch.tensor)->float:
     corr = (n * xy - x * y) / (torch.sqrt(n * x2 - x**2) * torch.sqrt(n * y2 - y**2))
 
     return corr.item()
+
+def kaiming_normal(m):
+    if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+        if hasattr(m, 'bias') and m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.ones_(m.weight)
+        nn.init.zeros_(m.bias)
+
+
+def init_model(model):
+    """Applies kaiming normal weights initialization to input model."""
+    model.apply(kaiming_normal)
+    return model
