@@ -82,7 +82,8 @@ def score_all_nets(dataset:str="cifar10", metrics:list=all_metrics, path_to_save
             for metric in metrics
             ]
         one_row = time.time() - start
-        print("{:.4g}".format(one_row))
+        if False: # change to True for debugging
+            print("{:.4g}".format(one_row))
         # --end of debugging :)
     
     np.savetxt(f"{path_to_save}/{dataset}_cachedmetrics.txt", result, header="Arch_Idx, NASWOT, logSynflow, PortionSkipped")
