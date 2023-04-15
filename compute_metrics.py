@@ -7,6 +7,8 @@ from typing import Text, List
 import argparse
 from scipy.stats import kendalltau, spearmanr
 from itertools import product
+from commons.utils import init_model
+import os
 
 def parse_args()->object: 
     """Args function. 
@@ -24,22 +26,68 @@ args = parse_args()
 this_dataset = args.dataset
 cachedmetrics_path = args.path_to_save
 
-def score_all_nets(dataset:str="cifar10", metrics:list=all_metrics, path_to_save:str="cachedmetrics")->None: 
-    """Score all networks inside NATS-Bench for the same set of three metrics"""
+
+def score_all_nets(dataset:str="cifar10", metrics:list=all_metrics, path_to_save:str="cachedmetrics", n_batches:int=3, n_inits:int=3)->None: 
+    """Score all networks inside NATS-Bench for the same set of three metrics
+    Args: 
+        dataset (str, optional): Dataset to be considered in computing the metric. As the architectures are the same across the different datasets
+                                 this is not very relevant here, hence the default. Defaults to "cifar10".
+        metrics (list, optional): Metrics to be computed. Defaults to `all_metrics`.
+        path_to_save (str, optional): Where to save the pre-computed metrics. Defaults to `cachedmetrics`.
+        n_batches (int, optional): Number of different batches to test the architecture for. Defaults to 3.
+        n_inits (int, optional): Number of different random networks init for the test architecture. Defaults to 3.
+
+    Returns: 
+        None. Cachedmetrics is directly saved. 
+    """
     nats = NATSInterface(dataset=dataset)
     result = np.zeros(shape=(len(nats), 1+len(metrics)))
-    # taking a random batch of images
-    images = Dataset(name=dataset, batchsize=64).random_examples(with_labels=False)
     p_bar = tqdm(nats)
     p_bar.set_description(f"Dataset: {dataset}")
 
+    # improve stability with computing the metric over 3 different batches of input data
+    batches_list = [
+        load_images(dataset=dataset, batch_size=64) for _ in range(n_batches)
+    ]
     for net_idx, net in enumerate(p_bar):
-        # storing the metrics
-        result[net_idx, :] = [net_idx] + [
-            metric(net=metric_interface(metric, net), inputs=images) for metric in metrics
+        # improve stability with computing the metric with 3 random initializations
+        nets_init = [
+            init_model(model=net[0]) for _ in range(n_inits)  # first element of the tuple is a TinyNetwork object.
+        ]
+        metric_input_net = [(net_init, net[1]) for net_init in nets_init]
+        """
+        The following equals to:
+        result = []
+        for metric in metric: 
+            metric_avg = []
+            for net_tuple in metric_input_net:
+                for batch in batches_list:
+                    metric_avg.append(
+                        metric(net=metric_interface(metric, net_tuple), inputs=batch)
+                    )
+            result.append(np.mean(metric_avg))
+        However, list comprehensions make the following code faster.
+        """
+        # store the metrics
+        # --for debugging purposes only :)
+        import time
+        start = time.time()
+        result[net_idx, :] = [int(net_idx)] + [
+            np.mean([
+            # computes the average of this metric over 3 batches of images per 3 different initializations
+                metric(net=metric_interface(metric, net_tuple), inputs=batch) 
+                for batch, net_tuple in product(batches_list, metric_input_net)
+                ])
+            
+            for metric in metrics
             ]
-        
+        one_row = time.time() - start
+        print("{:.4g}".format(one_row))
+        # --end of debugging :)
+    
     np.savetxt(f"{path_to_save}/{dataset}_cachedmetrics.txt", result, header="Arch_Idx, NASWOT, logSynflow, PortionSkipped")
+    print(f"{dataset}_cachedmetrics.txt saved at {path_to_save}.")
+
 
 def performance_all_nets_dataset(dataset:str, training_epochs:int=200, path_to_save:str="cachedmetrics")->None:
     """Retrieves and saves the test accuracy, training time (both per epoch and total) of all networks given a considering dataset.
@@ -66,14 +114,16 @@ def performance_all_nets_dataset(dataset:str, training_epochs:int=200, path_to_s
     for idx in pbar:
         results[idx, :] = [
             idx,
-            api.query_test_performance(architecture_idx=idx, n_epochs=training_epochs)["accuracy"],  # test-accuracy
-            api.query_training_performance(architecture_idx=idx, n_epochs=training_epochs)["per-epoch_time"],  # training per-epoch training time
-            api.query_training_performance(architecture_idx=idx, n_epochs=training_epochs)["total_time"]  # training all-epochs training time
+            # test-accuracy
+            api.query_test_performance(architecture_idx=idx, n_epochs=training_epochs)["accuracy"],
+            # training per-epoch training time
+            api.query_training_performance(architecture_idx=idx, n_epochs=training_epochs)["per-epoch_time"],
+            # training all-epochs training time
+            api.query_training_performance(architecture_idx=idx, n_epochs=training_epochs)["total_time"]
         ]
 
     np.savetxt(f"{path_to_save}/{dataset}_TrainTestMetrics.txt", results, header="ArchitectureIdx, Test-Accuracy, TrainingTime(xEpoch), TrainingTime(total)")
     print(f"{dataset}_TrainTestMetrics.txt saved at {path_to_save}.")
-
 
 def performance_all_nets(datasets:List[Text]=["cifar10", "cifar100", "ImageNet16-120"])->None:
     """Returns a txt file with accuracies and training-stats for all networks in the API.
@@ -142,14 +192,49 @@ def obtain_correlations(
     """
     for dataset, metric, corr_type in tqdm(product(datasets, metrics, corr_types)):
         c = correlation(dataset=dataset, metric=metric, corr_type=corr_type)
-        outline = f"On {dataset} {metric} has a {corr_type}-correlation of " + "{:.4f}".format(c)
+        outline = f"On {dataset} {metric} has a {corr_type}-correlation of " + "{:.4g}".format(c)
         print(outline)
 
-def main():
-    # obtain correlations between metrics defined in metrics/__init__.py and test accuracy.
-    obtain_correlations()
+def parse_args()->object: 
+    """Args function. 
+    Returns:
+        (object): args parser
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--stop-correlation", action="store_false", help="Stop printint out metrics correlation")
+    parser.add_argument("--unify", action="store_true", help="Average all measurements over the different datasets.")
 
+    return parser.parse_args()
+
+args = parse_args()
+
+def main():
+    cachedmetrics_path = "cachedmetrics"  # change here to store cached metrics somewhere else
+    datasets = ["cifar10", "cifar100", "imagenet"]
+    """Test whether or not all datasets have been used for scoring. When this is not the case, do so."""
+    for d in datasets: 
+        if not os.path.exists(f"{cachedmetrics_path}/{d}_cachedmetrics.txt"):
+            print(f"Architectures are not scored over dataset {d}. Starting scoring (might take some time)")
+            score_all_nets(dataset=d, path_to_save=cachedmetrics_path)
+    """Unifying the scores over all the datasets. Actually doing it only on users input."""
+    unify=args.unify
+    if unify:
+        filename = f"{cachedmetrics_path}/{d}_cachedmetrics.txt"
+        avg_metrics = np.mean(
+            [np.loadtxt(filename, skiprows=1) for d in dataset], 
+            axis=0
+        )
+        np.savetxt(
+            f"{cachedmetrics_path}/avg_cachedmetrics.txt", 
+            avg_metrics, 
+            header="Arch_Idx, NASWOT, logSynflow, PortionSkipped"
+        )
+        print(f"Unified metrics available at: {filename}")
+
+    """Obtain correlations between metrics defined in metrics/__init__.py and test accuracy."""
+    stop_correlation=args.stop_correlation
+    if not stop_correlation:
+        obtain_correlations()
 
 if __name__ == "__main__":
     main()
-
