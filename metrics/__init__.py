@@ -5,7 +5,10 @@ from typing import Tuple, Callable
 from commons.utils import architecture_to_genotype
 
 def compatible_skipped_layers(net:str, inputs: torch.Tensor):
-    """This function computes a metric related to the number of skipped layers. The inputs arguments is used for compatibility only"""
+    """
+    This function computes a metric related to the number of skipped layers. 
+    The inputs and random_init rguments is used for compatibility only
+    """
     return compute_skipped_layers(architecture_to_genotype(net))
 
 metric_input_type = {
