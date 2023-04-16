@@ -34,7 +34,7 @@ def load_images(
     if with_labels:
         return images  # returns labelled examples
     else: 
-        return images[0]  # only returns data, with no labels
+        return images[0].float()  # only returns data, with no labels. Imagenet tensors are in uint8 hence mapping to floats
 
 def read_lookup_table(dataset:str="cifar100"):
     """
