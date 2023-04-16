@@ -223,15 +223,19 @@ def main():
     cachedmetrics_path = "cachedmetrics"  # change here to store cached metrics somewhere else
     datasets = ["cifar10", "cifar100", "imagenet"]
     """Test whether or not all datasets have been used for scoring. When this is not the case, do so."""
+    
     # creating a lambda function for multiprocessing
-    score_if_necessary = lambda dataset: check_and_compute(
-        dataset=dataset, 
-        cachedmetrics_path=cachedmetrics_path, 
-        verbose=0
-    )
+    def score_if_necessary(dataset:str): 
+        """
+        Wrapper that defaults some arguments of `check_and_compute`. 
+        Created to enable multiprocessing.
+        """
+        return check_and_compute(dataset=dataset, cachedmetrics_path=cachedmetrics_path, verbose=0)
+    
     with Pool() as pool:
         # concurrently scoring all networks
         pool.map(score_if_necessary, datasets)
+    
     """Unifying the scores over all the datasets. Actually doing it only on users input."""
     unify=args.unify
     if unify:
