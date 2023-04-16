@@ -204,6 +204,7 @@ def parse_args()->object:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stop-correlation", action="store_false", help="Stop printint out metrics correlation")
     parser.add_argument("--unify", action="store_true", help="Average all measurements over the different datasets.")
+    parser.add_argument("--dataset", default=None, type=str, help="Dataset to which run the metrics on.")
 
     return parser.parse_args()
 
@@ -221,21 +222,19 @@ def check_and_compute(dataset:str="cifar10", cachedmetrics_path:str="cachedmetri
 
 def main():
     cachedmetrics_path = "cachedmetrics"  # change here to store cached metrics somewhere else
+    verbosity = 1 # change to > 0 to visualize info as the code runs
     datasets = ["cifar10", "cifar100", "imagenet"]
     """Test whether or not all datasets have been used for scoring. When this is not the case, do so."""
-    
-    # creating a lambda function for multiprocessing
-    def score_if_necessary(dataset:str): 
-        """
-        Wrapper that defaults some arguments of `check_and_compute`. 
-        Created to enable multiprocessing.
-        """
-        return check_and_compute(dataset=dataset, cachedmetrics_path=cachedmetrics_path, verbose=0)
-    
-    with Pool() as pool:
-        # concurrently scoring all networks
-        pool.map(score_if_necessary, datasets)
-    
+    if args.dataset is None: 
+        # score all datasets
+        for d in datasets:
+            check_and_compute(dataset=d, cachedmetrics_path=cachedmetrics_path, verbose=verbosity)
+    # if user provides a single dataset scoring is applied to this only.
+    elif args.dataset is not None: 
+        check_and_compute(dataset=args.dataset, cachedmetrics_path=cachedmetrics_path, verbose=verbosity)
+    else:
+        raise ValueError(f"{args.dataset} is not a valid entry!")
+
     """Unifying the scores over all the datasets. Actually doing it only on users input."""
     unify=args.unify
     if unify:
