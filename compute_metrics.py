@@ -215,6 +215,11 @@ def check_and_compute(dataset:str="cifar10", cachedmetrics_path:str="cachedmetri
     This function checks whether or not the cachedmetrics related to an input dataset are present in cachedmetrics_path.
     If not, it computes those.
     """
+    # Check if the directory exists
+    if not os.path.isdir(cachedmetrics_path):
+        # If the directory does not exist, create it
+        os.mkdir(cachedmetrics_path)
+    
     if not os.path.exists(f"{cachedmetrics_path}/{dataset}_cachedmetrics.txt"):
         if verbose > 0: 
             print(f"Architectures are not scored over dataset {dataset}. Starting scoring (might take some time...)")
