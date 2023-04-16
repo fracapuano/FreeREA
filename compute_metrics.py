@@ -47,7 +47,7 @@ def score_all_nets(dataset:str="cifar10", metrics:list=all_metrics, path_to_save
 
     # improve stability with computing the metric over 3 different batches of input data
     batches_list = [
-        load_images(dataset=dataset, batch_size=64) for _ in range(n_batches)
+        load_images(dataset=dataset, batch_size=64, with_labels=False) for _ in range(n_batches)
     ]
     for net_idx, net in enumerate(p_bar):
         # improve stability with computing the metric with 3 random initializations
