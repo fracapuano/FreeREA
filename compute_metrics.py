@@ -209,28 +209,43 @@ def parse_args()->object:
 
 args = parse_args()
 
+def check_and_compute(dataset:str="cifar10", cachedmetrics_path:str="cachedmetrics", verbose:int=1):
+    """
+    This function checks whether or not the cachedmetrics related to an input dataset are present in cachedmetrics_path.
+    If not, it computes those.
+    """
+    if not os.path.exists(f"{cachedmetrics_path}/{dataset}_cachedmetrics.txt"):
+        if verbose > 0: 
+            print(f"Architectures are not scored over dataset {dataset}. Starting scoring (might take some time...)")
+        score_all_nets(dataset=dataset, path_to_save=cachedmetrics_path)
+
 def main():
     cachedmetrics_path = "cachedmetrics"  # change here to store cached metrics somewhere else
     datasets = ["cifar10", "cifar100", "imagenet"]
     """Test whether or not all datasets have been used for scoring. When this is not the case, do so."""
-    for d in datasets: 
-        if not os.path.exists(f"{cachedmetrics_path}/{d}_cachedmetrics.txt"):
-            print(f"Architectures are not scored over dataset {d}. Starting scoring (might take some time)")
-            score_all_nets(dataset=d, path_to_save=cachedmetrics_path)
+    # creating a lambda function for multiprocessing
+    score_if_necessary = lambda dataset: check_and_compute(
+        dataset=dataset, 
+        cachedmetrics_path=cachedmetrics_path, 
+        verbose=0
+    )
+    with Pool() as pool:
+        # concurrently scoring all networks
+        pool.map(score_if_necessary, datasets)
     """Unifying the scores over all the datasets. Actually doing it only on users input."""
     unify=args.unify
     if unify:
-        filename = f"{cachedmetrics_path}/{d}_cachedmetrics.txt"
         avg_metrics = np.mean(
-            [np.loadtxt(filename, skiprows=1) for d in dataset], 
+            [np.loadtxt(f"{cachedmetrics_path}/{d}_cachedmetrics.txt", skiprows=1) for d in dataset], 
             axis=0
         )
+        output_filename = f"{cachedmetrics_path}/avg_cachedmetrics.txt"
         np.savetxt(
-            f"{cachedmetrics_path}/avg_cachedmetrics.txt", 
+            output_filename, 
             avg_metrics, 
             header="Arch_Idx, NASWOT, logSynflow, PortionSkipped"
         )
-        print(f"Unified metrics available at: {filename}")
+        print(f"Unified metrics available at: {output_filename}")
 
     """Obtain correlations between metrics defined in metrics/__init__.py and test accuracy."""
     stop_correlation=args.stop_correlation
