@@ -86,13 +86,11 @@ class Genetic:
         self, 
         genome:Iterable[str], 
         strategy:Tuple[str, str]="comma", 
-        tournament_size:int=5,
-        cross_p:float=0.5):
+        tournament_size:int=5):
         
         self.genome = set(genome) if not isinstance(genome, set) else genome
         self.strategy = strategy
         self.tournament_size = tournament_size
-        self.cross_probability = cross_p
 
     def tournament(self, population:Iterable[Individual]) -> Iterable[Individual]:
         """Return tournament, i.e. a random subset of population of size tournament size"""
@@ -150,14 +148,12 @@ class Genetic:
 class Population: 
     def __init__(self,
                  space:object,
-                 individual:object=Individual,
                  init_population:Union[bool, Iterable]=True,
                  n_individuals:int=20,
                  normalization:str='dynamic'): 
         self.space = space
-        self.individual = individual
         if init_population:
-            self._population = generate_population(searchspace_interface=space, individual=individual, n_individuals=n_individuals)
+            self._population = generate_population(searchspace_interface=space, n_individuals=n_individuals)
         else: 
             self._population = init_population
         
@@ -247,6 +243,7 @@ class Population:
     
     def add_to_population(self, new_individuals:Iterable[Individual]): 
         """Add new_individuals to population"""
+        # TODO: add a block that if new_individuals are over the current extremes resets those
         self._population = list(chain(self.individuals, new_individuals))
     
     def remove_from_population(self, attribute:str="fitness", n:int=1, ascending:bool=True): 
