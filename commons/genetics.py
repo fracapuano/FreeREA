@@ -148,7 +148,12 @@ class Genetic:
         return recombinant
 
 class Population: 
-    def __init__(self, space:object, individual:object=Individual, init_population:Union[bool, Iterable]=True, n_individuals:int=20, normalization:str='dynamic'): 
+    def __init__(self,
+                 space:object,
+                 individual:object=Individual,
+                 init_population:Union[bool, Iterable]=True,
+                 n_individuals:int=20,
+                 normalization:str='dynamic'): 
         self.space = space
         self.individual = individual
         if init_population:
@@ -283,13 +288,16 @@ class Population:
         self.worst_n = sorted(self.individuals, key=lambda ind: getattr(ind, attribute))[:n]
     
 
-def generate_population(searchspace_interface:NATSInterface, individual:Individual, n_individuals:int=20)->list: 
+def generate_population(searchspace_interface:NATSInterface, n_individuals:int=20)->list: 
     """Generate a population of individuals"""
     # at first generate full architectures, cell-structure and unique network indices
     architectures, cells, indices = searchspace_interface.generate_random_samples(n_samples=n_individuals)
     
-    # mapping strings to list of genes (~genome)
+    # mapping strings to list of genes (~genomes)
     genotypes = map(lambda cell: architecture_to_genotype(cell), cells)
     # turn full architecture and cell-structure into genetic population individual
-    population = [individual(net=net, genotype=genotype, index=index) for net, genotype, index in zip(architectures, genotypes, indices)]
+    population = [
+        Individual(net=net, genotype=genotype, index=index) 
+        for net, genotype, index in zip(architectures, genotypes, indices)
+    ]
     return population
