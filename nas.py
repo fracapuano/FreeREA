@@ -4,6 +4,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import argparse
 import os
+from tqdm import tqdm
 
 def parse_args()->object: 
     """Args function. 
@@ -32,15 +33,11 @@ if args.default:
     n_runs=30
     use_lookup=True
 
-def init_and_launch(dummy_args:tuple)->float: 
+def init_and_launch()->float: 
     """
     This function inits and launches FreeREA.
     It returns the test accuracy.
     """
-    # unpack dummy arguments
-    run_idx, n_generations = dummy_args
-
-    print("\r" + " " * 100 + "\r" + f"Run {run_idx} just started!", end="", flush=True)
     # initializes the algorithm
     algorithm = GeneticSearch(
         dataset=dataset, 
@@ -51,21 +48,20 @@ def init_and_launch(dummy_args:tuple)->float:
     _, test_accuracy = algorithm.solve(
         max_generations=n_generations
     )
-    print("Done!")
     return test_accuracy
 
 def main():
     """Invokes the solve method and prints out information on best individual found"""
     seed_all(seed=0)  # FreeREA's seed
-    num_cpus = int(0.75 * os.cpu_count())  # use 75% of available cpus
-
-    with ProcessPoolExecutor(max_workers=num_cpus) as executor:
-        # repeats experiment num_runs times
-        accuracies = list(executor.map(
-            init_and_launch, 
-            [(run_idx, n_generations) for run_idx, n_generations in enumerate(range(n_runs))])
-            )
+    num_cpus = int(0.75 * os.cpu_count()) # use 75% of available cpus
     
+    accuracies = [None for _ in range(n_runs)]
+    for run_idx in tqdm(range(n_runs), desc="Top test accuracy: {:.4g}".format(test_accuracy)):
+        # initialize FreeREA algorithm and launch an experiment
+        test_accuracy = init_and_launch()
+        # store the accuracy found
+        accuracies[run_idx] = test_accuracy
+
     # retrieving average and std for the accuracy
     avg_test_accuracy, std_test_accuracy = np.mean(accuracies), np.std(accuracies)
 
