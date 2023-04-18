@@ -137,6 +137,22 @@ class GeneticSearch:
             individual=individual, lookup_table=self.lookup_table)
         return [get_naswot, get_logsynflow, get_skipped]
 
+    def obtain_parents(self, n_parents:int=2): 
+        # obtain tournament
+        tournament = self.genetic_operator.tournament(population=self.population.individuals)
+        # turn tournament into a local population 
+        local_population = Population(space=self.nats, init_population=tournament)
+        for score in self.score_names:
+            local_population.set_extremes(score=score)
+        
+        # define a fitness function and compute fitness for each individual
+        fitness_function = lambda individual: self.compute_fitness(individual=individual,
+                                                                   population=local_population
+                                                                   )
+        local_population.update_fitness(fitness_function=fitness_function)
+        parents = sorted(local_population.individuals, key = lambda individual: individual.fitness, reverse=True)[:n_parents]
+        return parents
+
     def solve(self, max_generations:int=100)->Union[Individual, float]: 
         """
         This function performs Regularized Evolutionary Algorithm (REA) with Training-Free metrics. 
@@ -157,7 +173,7 @@ class GeneticSearch:
             # perform ageing
             population.age()
             # obtain parents
-            parents = self.genetic_operator.obtain_parents(population=individuals)
+            parents = self.obtain_parents()
             # obtain recombinant child
             child = self.perform_recombination(parents=parents)
             # mutate parents
