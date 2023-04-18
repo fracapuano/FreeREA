@@ -40,7 +40,7 @@ def init_and_launch(dummy_args:tuple)->float:
     # unpack dummy arguments
     run_idx, n_generations = dummy_args
 
-    print(f"Run {run_idx} just started!", end="", flush=True)
+    print("\r" + " " * 100 + "\r" + f"Run {run_idx} just started!", end="", flush=True)
     # initializes the algorithm
     algorithm = GeneticSearch(
         dataset=dataset, 
@@ -51,6 +51,7 @@ def init_and_launch(dummy_args:tuple)->float:
     _, test_accuracy = algorithm.solve(
         max_generations=n_generations
     )
+    print("\r" + " " * 100 + "\rFinal Test Accuracy: {:.4g}".format(test_accuracy), end="", flush=True)
     return test_accuracy
 
 def main():
@@ -68,7 +69,7 @@ def main():
     # retrieving average and std for the accuracy
     avg_test_accuracy, std_test_accuracy = np.mean(accuracies), np.std(accuracies)
 
-    print('On {} the found networks has an average test accuracy of: {:.4g} ± {:.4g}'.format(dataset, avg_test_accuracy, std_test_accuracy))
+    print('On {} the found networks has an average test accuracy of: {:.5g} ± {:.5g}'.format(dataset, avg_test_accuracy, std_test_accuracy))
 
 if __name__=="__main__":
     main()
