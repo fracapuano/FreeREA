@@ -57,7 +57,7 @@ def read_test_metrics(dataset:str="cifar100"):
             raise ValueError('Please specify a valid dataset. Should be one of cifar10, cifar100, ImageNet')
         else:
             dataset = 'ImageNet16-120'
-    lookup_table = np.loadtxt(f'cachedmetrics/{dataset}_TrainTestMetrics.txt', skiprows=1)
+    lookup_table = np.loadtxt(f'cachedmetrics/{dataset}_perfmetrics.txt', skiprows=1)
     return lookup_table
 
 def load_normalization(dataset:str, normalization:str):
