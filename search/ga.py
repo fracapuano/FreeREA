@@ -7,8 +7,8 @@ from tqdm import tqdm
 from typing import Union
 
 FreeREA_dict = {
-    "n": 2,  # tournament size
-    "N": 3,  # population size
+    "n": 3,  # tournament size
+    "N": 5,  # population size
     "mutation_prob": 1.,  # always mutates
     "recombination_prob": 1.,  # always recombines
     "P_parent1": 0.5,  # fraction of child that comes from parent1 on average
@@ -95,13 +95,13 @@ class GeneticSearch:
             return child
         else:  # don't do recombination - simply return 1st parent
             return parents[0]  
-
+    # TODO: Merge compute fitness and assign_fitness
     def score_and_extremes(self, scores:Iterable[Callable]): 
         """This function scores the whole population and sets extremes values for the population."""
         score_population(population=self.population, scores=scores)
         for score in self.score_names:
             self.population.set_extremes(score=score)
-    # TODO: Merge compute fitness and assign_fitness
+
     def compute_fitness(self, individual:Individual, population:Population): 
         """This function returns the fitness of individuals according to FreeREA's paper"""
         return fitness_score(individual=individual, population=population, style="dynamic", weights=None)
@@ -159,7 +159,7 @@ class GeneticSearch:
             # obtain parents
             parents = self.genetic_operator.obtain_parents(population=individuals)
             # obtain recombinant child
-            child = self.perform_recombination(individuals=parents)
+            child = self.perform_recombination(parents=parents)
             # mutate parents
             mutant1, mutant2 = [self.perform_mutation(parent) for parent in parents]
             # add mutants and child to population
