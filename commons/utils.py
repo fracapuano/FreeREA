@@ -56,7 +56,7 @@ def read_test_metrics(dataset:str="cifar100"):
         if 'imagenet' not in dataset.lower():
             raise ValueError('Please specify a valid dataset. Should be one of cifar10, cifar100, ImageNet')
         else:
-            dataset = 'ImageNet16-120'
+            dataset = 'imagenet'
     lookup_table = np.loadtxt(f'cachedmetrics/{dataset}_perfmetrics.txt', skiprows=1)
     return lookup_table
 
