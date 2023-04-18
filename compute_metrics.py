@@ -123,8 +123,8 @@ def performance_all_nets_dataset(dataset:str, training_epochs:int=200, path_to_s
             api.query_training_performance(architecture_idx=idx, n_epochs=training_epochs)["total_time"]
         ]
 
-    np.savetxt(f"{path_to_save}/{dataset}_TrainTestMetrics.txt", results, header="ArchitectureIdx, Test-Accuracy, TrainingTime(xEpoch), TrainingTime(total)")
-    print(f"{dataset}_TrainTestMetrics.txt saved at {path_to_save}.")
+    np.savetxt(f"{path_to_save}/{dataset}_perfmetrics.txt", results, header="ArchitectureIdx, Test-Accuracy, TrainingTime(xEpoch), TrainingTime(total)")
+    print(f"{dataset}_perfmetrics.txt saved at {path_to_save}.")
 
 def performance_all_nets(datasets:List[Text]=["cifar10", "cifar100", "ImageNet16-120"])->None:
     """Returns a txt file with accuracies and training-stats for all networks in the API.
@@ -164,7 +164,7 @@ def correlation(dataset:str, metric:str, corr_type:str="spearman", read:bool=Tru
         raise NotImplementedError("Recomputing metrics from scratch not yet implemented")
     
     file_name = f"{cachedmetric}/{dataset}_cachedmetrics.txt"
-    accuracy_file = f"{cachedmetric}/{dataset}_TrainTestMetrics.txt"
+    accuracy_file = f"{cachedmetric}/{dataset}_perfmetrics.txt"
     metric_values = np.loadtxt(file_name)[:, 1+metrics_names.index(metric)]  # retrieving column associated with a given metric name
     metric_values[metric_values == -np.inf] = 0
     
@@ -229,6 +229,11 @@ def main():
     cachedmetrics_path = "cachedmetrics"  # change here to store cached metrics somewhere else
     verbosity = 1 # change to > 0 to visualize info as the code runs
     datasets = ["cifar10", "cifar100", "imagenet"]
+    """Saving the final test accuracy of each model"""
+    for d in datasets:
+        if not os.path.exists(f"{cachedmetrics_path}/{d}_perfmetrics.txt"):
+            performance_all_nets(datasets=[d])  # multiprocessing requires inputs as lists
+    
     """Test whether or not all datasets have been used for scoring. When this is not the case, do so."""
     if args.dataset is None: 
         # score all datasets
