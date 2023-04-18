@@ -14,7 +14,7 @@ def parse_args()->object:
     parser.add_argument("--dataset", default="cifar10", type=str, help="Dataset to be considered. One in ['cifar10', 'cifar100', 'ImageNet16-120'].s")
     parser.add_argument("--n-generations", default=100, type=int, help="Number of generations to let the genetic algorithm run.")
     parser.add_argument("--n-runs", default=30, type=int, help="Number of runs used to ")
-    parser.add_argument("--lookup", action="store_true", help="When provided, uses lookup table instead of computing metrics on the fly.")
+    parser.add_argument("--lookup", action="store_false", help="When provided, uses lookup table instead of computing metrics on the fly.")
     
     parser.add_argument("--default", action="store_true", help="Default configuration. Ignores evvery other parameter when specified")
     return parser.parse_args()
