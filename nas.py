@@ -1,9 +1,7 @@
 from search import GeneticSearch, FreeREA_dict
 from commons import seed_all
-from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import argparse
-import os
 from tqdm import tqdm
 
 def parse_args()->object: 
@@ -55,7 +53,7 @@ def main():
     seed_all(seed=0)  # FreeREA's seed
     accuracies = [None for _ in range(n_runs)]
     pbar = tqdm(range(n_runs))
-    
+
     for run_idx in pbar:
         # initialize FreeREA algorithm and launch an experiment
         test_accuracy = init_and_launch()
