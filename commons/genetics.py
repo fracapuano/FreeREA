@@ -93,8 +93,11 @@ class Genetic:
         self.tournament_size = tournament_size
 
     def tournament(self, population:Iterable[Individual]) -> Iterable[Individual]:
-        """Return tournament, i.e. a random subset of population of size tournament size"""
-        return np.random.choice(a=population, size=self.tournament_size).tolist()
+        """
+        Return tournament, i.e. a random subset of population of size tournament size. 
+        Sampling is done without replacement to ensure diversity inside the actual tournament.
+        """
+        return np.random.choice(a=population, size=self.tournament_size, replace=False).tolist()
     
     def obtain_parents(self, population:Iterable[Individual], n_parents:int=2) -> Iterable[Individual]:
         """Obtain n_parents from population. Parents are defined as the fittest individuals in n_parents tournaments"""
@@ -121,7 +124,7 @@ class Genetic:
             # mutation changes gene, so the current one must be removed from the pool of candidate genes
             mutations = self.genome.difference([operation])
             
-            # overwriting the mutant gene with a new one
+            # overwriting the mutant gene with a new one - probability of chosing how to mutate should be selected as well
             mutant_genotype[mutant_locus] = np.random.choice(a=list(mutations)) + f"~{level}"
 
         mutant_individual = Individual(net=None, genotype=None, index=None)
@@ -135,10 +138,10 @@ class Genetic:
             raise ValueError("Number of individuals cannot be different from 2!")
         
         individual1, individual2 = individuals
-        recombinant_genotype = []
-        for gene_1, gene_2 in zip(individual1.genotype, individual2.genotype): 
+        recombinant_genotype = [None for _ in range(len(individual1.genotype))]
+        for locus_idx, (gene_1, gene_2) in enumerate(zip(individual1.genotype, individual2.genotype)):
             # chose genes from parent1 according to P_parent1
-            recombinant_genotype += gene_1 if np.random.random() <= P_parent1 else gene_2 
+            recombinant_genotype[locus_idx] = gene_1 if np.random.random() <= P_parent1 else gene_2
 
         recombinant = Individual(net=None, genotype=None, index=None)
         recombinant.update_genotype(list(recombinant_genotype))
