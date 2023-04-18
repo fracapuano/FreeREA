@@ -51,7 +51,7 @@ def init_and_launch(dummy_args:tuple)->float:
     _, test_accuracy = algorithm.solve(
         max_generations=n_generations
     )
-    print("\r" + " " * 100 + "\rFinal Test Accuracy: {:.4g}".format(test_accuracy), end="", flush=True)
+    print("Done!")
     return test_accuracy
 
 def main():
