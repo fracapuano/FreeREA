@@ -44,7 +44,7 @@ def read_lookup_table(dataset:str="cifar100"):
         if 'imagenet' not in dataset.lower():
             raise ValueError('Please specify a valid dataset. Should be one of cifar10, cifar100, ImageNet')
         else:
-            dataset = 'ImageNet16-120'
+            dataset = 'imagenet'
     lookup_table = np.loadtxt(f'cachedmetrics/{dataset}_cachedmetrics.txt', skiprows=1)
     return lookup_table
 
