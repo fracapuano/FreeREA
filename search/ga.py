@@ -7,8 +7,8 @@ from tqdm import tqdm
 from typing import Union
 
 FreeREA_dict = {
-    "n": 3,  # tournament size
-    "N": 5,  # population size
+    "n": 5,  # tournament size
+    "N": 25,  # population size
     "mutation_prob": 1.,  # always mutates
     "recombination_prob": 1.,  # always recombines
     "P_parent1": 0.5,  # fraction of child that comes from parent1 on average
