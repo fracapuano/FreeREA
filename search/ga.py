@@ -153,7 +153,7 @@ class GeneticSearch:
         MAX_GENERATIONS = max_generations
         population, individuals = self.population, self.population.individuals
 
-        for gen in tqdm(range(MAX_GENERATIONS)):
+        for gen in range(MAX_GENERATIONS):
             # perform ageing
             population.age()
             # obtain parents
