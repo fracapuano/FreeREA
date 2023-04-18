@@ -155,7 +155,7 @@ class Population:
                  n_individuals:int=20,
                  normalization:str='dynamic'): 
         self.space = space
-        if init_population:
+        if init_population is True:
             self._population = generate_population(searchspace_interface=space, n_individuals=n_individuals)
         else: 
             self._population = init_population
