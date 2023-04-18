@@ -1,4 +1,4 @@
-from search import FreeREA
+from search import GeneticSearch, FreeREA_dict
 import argparse
 
 def parse_args()->object: 
@@ -27,7 +27,11 @@ if args.default:
 
 def main():
     """Invokes the solve method and prints out information on best individual found"""
-    algorithm = FreeREA(dataset=dataset, lookup=use_lookup)
+    algorithm = GeneticSearch(
+        dataset=dataset, 
+        lookup=use_lookup, 
+        genetics_dict=FreeREA_dict
+    )
 
     best_individual, test_accuracy = algorithm.solve(
         max_generations=n_generations
