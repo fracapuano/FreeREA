@@ -10,23 +10,6 @@ from itertools import product
 from commons.utils import init_model
 import os
 
-def parse_args()->object: 
-    """Args function. 
-    Returns:
-        (object): args parser
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="cifar10", type=str, help="Dataset to be used in computing the considered metrics")
-    parser.add_argument("--path-to-save", default="cachedmetrics", type=str, help="Where to save the cached-metrics files")
-
-    return parser.parse_args()
-
-args = parse_args()
-
-this_dataset = args.dataset
-cachedmetrics_path = args.path_to_save
-
-
 def score_all_nets(dataset:str="cifar10", metrics:list=all_metrics, path_to_save:str="cachedmetrics", n_batches:int=3, n_inits:int=3)->None: 
     """Score all networks inside NATS-Bench for the same set of three metrics
     Args: 
@@ -88,7 +71,6 @@ def score_all_nets(dataset:str="cifar10", metrics:list=all_metrics, path_to_save
     
     np.savetxt(f"{path_to_save}/{dataset}_cachedmetrics.txt", result, header="Arch_Idx, NASWOT, logSynflow, PortionSkipped")
     print(f"{dataset}_cachedmetrics.txt saved at {path_to_save}.")
-
 
 def performance_all_nets_dataset(dataset:str, training_epochs:int=200, path_to_save:str="cachedmetrics")->None:
     """Retrieves and saves the test accuracy, training time (both per epoch and total) of all networks given a considering dataset.
