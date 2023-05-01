@@ -1,12 +1,14 @@
 from pathlib import Path
 from itertools import chain
-from typing import List
+from typing import List, Union
 import numpy as np
 import pandas as pd
 import random
 import pickle
 import torch
 import torch.nn as nn
+from scipy.stats import sem, t
+import matplotlib.pyplot as plt
 
 def load_images(
         dataset:str='cifar100', 
@@ -174,3 +176,44 @@ def seed_all(seed:int):
     torch.cuda.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
+
+def plot_mean_with_ci_errorbars(matrix:np.ndarray)->Union[plt.figure, plt.axis]:
+    """
+    Plots mean and confidence interval from a given matrix of a certain shape.
+    Uses errorbars style.
+    """
+    mean_values = np.mean(matrix, axis=0)
+    sem_values = sem(matrix, axis=0)
+    n_trials = matrix.shape[0]
+    h = sem_values * t.ppf((1 + 0.95) / 2, n_trials - 1)
+
+    fig, ax = plt.subplots()
+    ax.errorbar(range(mean_values.size), mean_values, yerr=h, fmt='o', capsize=5)
+    ax.set_xticks(range(mean_values.size))
+    ax.set_xticklabels(range(1, mean_values.size+1))
+    ax.set_xlabel('Trials', fontsize=14)
+    ax.set_ylabel('Mean Value', fontsize=14)
+    ax.set_title('Mean Value with 95% Confidence Interval', fontsize=14, fontweight="bold")
+    
+    return fig, ax
+
+def plot_mean_with_ci_fillbetween(matrix: np.ndarray) -> Union[plt.figure, plt.axis]:
+    """
+    Plots mean and confidence interval from a given matrix of a certain shape.
+    Uses fillbetween style.
+    """
+    mean_values = np.mean(matrix, axis=0)
+    sem_values = sem(matrix, axis=0)
+    n_trials = matrix.shape[0]
+    h = sem_values * t.ppf((1 + 0.95) / 2, n_trials - 1)
+
+    fig, ax = plt.subplots()
+    ax.plot(range(mean_values.size), mean_values, 'o-', markersize=5, linewidth=1)
+    ax.fill_between(range(mean_values.size), mean_values - h, mean_values + h, alpha=0.2)
+    ax.set_xticks(range(mean_values.size))
+    ax.set_xticklabels(range(1, mean_values.size+1))
+    ax.set_xlabel('Generation', fontsize=14)
+    ax.set_ylabel('Test Accuracy', fontsize=14)
+    ax.set_title('Mean Test Accuracy (with 95% Confidence \nInterval) over Generations', fontsize=14, fontweight="bold")
+    
+    return fig, ax
