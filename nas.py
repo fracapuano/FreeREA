@@ -93,6 +93,7 @@ def genotype_to_accuracy(interface:object, genotype:list)->float:
 def main():
     """Invokes the solve method and prints out information on best individual found"""
     seed_all(seed=0)  # FreeREA's seed
+    show = False  # whether or not to show the figure with final results
     # search space interface
     interface = NATSInterface(dataset=dataset)
     result_list = Manager().list()
@@ -121,7 +122,8 @@ def main():
             ).reshape((n_runs, -1))
         # plot average evolution alongside 95% CI over the mean
         fig, ax = plot_mean_with_ci_fillbetween(trajectories)
-        plt.show()
+        if show: 
+            plt.show()
         # choose whether or not to save the figure
         if savefig:
             fig.savefig(f"AvgEvolution_{dataset}_{n_runs}.svg")
