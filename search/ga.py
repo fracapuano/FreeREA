@@ -21,13 +21,15 @@ class GeneticSearch:
                  dataset:str="cifar10", 
                  lookup:bool=True, 
                  genetics_dict:dict=FreeREA_dict, 
-                 init_population:Union[None, Iterable[Individual]]=None):
+                 init_population:Union[None, Iterable[Individual]]=None,
+                 fitness_weights:Union[None, np.ndarray]=None):
         
         self.dataset = dataset
         self.score_names = ["naswot_score", "logsynflow_score", "skip_score"]
         self.lookup = lookup
         self.lookup_table = read_lookup_table(dataset=self.dataset) if self.lookup else None 
         self.genetics_dict = genetics_dict
+        self.weights = fitness_weights
         # get a random batch from dataset
         self.images = load_images(dataset=dataset)
 
@@ -104,7 +106,7 @@ class GeneticSearch:
 
     def compute_fitness(self, individual:Individual, population:Population): 
         """This function returns the fitness of individuals according to FreeREA's paper"""
-        return fitness_score(individual=individual, population=population, style="dynamic", weights=None)
+        return fitness_score(individual=individual, population=population, style="dynamic", weights=self.weights)
 
     def assign_fitness(self):
         """This function assigns to each invidual a given fitness score."""
@@ -153,7 +155,7 @@ class GeneticSearch:
         parents = sorted(local_population.individuals, key = lambda individual: individual.fitness, reverse=True)[:n_parents]
         return parents
 
-    def solve(self, max_generations:int=100)->Union[Individual, float]: 
+    def solve(self, max_generations:int=100, return_trajectory:bool=False)->Union[Individual, float]: 
         """
         This function performs Regularized Evolutionary Algorithm (REA) with Training-Free metrics. 
         Details on the whole procedure can be found here: https://arxiv.org/pdf/2207.05135.pdf. 
@@ -168,8 +170,11 @@ class GeneticSearch:
         
         MAX_GENERATIONS = max_generations
         population, individuals = self.population, self.population.individuals
+        bests = []
 
         for gen in range(MAX_GENERATIONS):
+            # save best individual
+            bests.append(max(individuals, key=lambda ind: ind.fitness))
             # perform ageing
             population.age()
             # obtain parents
@@ -194,5 +199,7 @@ class GeneticSearch:
         # retrieve test accuracy for this individual
         test_metrics = read_test_metrics(dataset=self.dataset)
         test_accuracy = test_metrics[best_individual.index, 1]
-
-        return (best_individual, test_accuracy)
+        if not return_trajectory:
+            return (best_individual, test_accuracy)
+        else: 
+            return (best_individual, test_accuracy, bests)
