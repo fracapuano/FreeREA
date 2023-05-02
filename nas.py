@@ -7,6 +7,8 @@ import os
 from multiprocessing import Pool, Manager
 import matplotlib.pyplot as plt
 
+"""TODO: run parallele non funzionano. Ottengo "troppi file aperti" come messaggio di errore."""
+
 def parse_args()->object: 
     """Args function. 
     Returns:
@@ -19,6 +21,7 @@ def parse_args()->object:
     parser.add_argument("--lookup", action="store_false", help="When provided, uses lookup table instead of computing metrics on the fly.")
     parser.add_argument("--store-run", action="store_false", help="When provided, avoids creation of a file in which to store statistics about each run.")
     parser.add_argument("--savefig", action="store_true", help="When provided, triggers saving the fig related to the avg test accuracy obtained during the opt process.")
+    parser.add_argument("--goparallel", action="store_true", help="When provided, triggers different runs to be parallel rather than sequentially.")
     
     parser.add_argument("--default", action="store_true", help="Default configuration. Ignores evvery other parameter when specified")
     return parser.parse_args()
@@ -31,6 +34,7 @@ n_runs=args.n_runs
 use_lookup=args.lookup
 store_traj=args.store_run
 savefig=args.savefig
+goparallel=args.goparallel
 
 if args.default: 
     dataset="cifar10"
@@ -38,7 +42,7 @@ if args.default:
     n_runs=30
     use_lookup=True
 
-def init_and_launch()->None: 
+def init_and_launch():
     """
     This function inits and launches FreeREA.
     It returns the test accuracy.
@@ -48,7 +52,7 @@ def init_and_launch()->None:
         dataset=dataset,
         lookup=use_lookup,
         genetics_dict=FreeREA_dict,
-        #fitness_weights=np.array([0.5, 0.5, 0])  # should always get conv3x3
+        fitness_weights=np.array([0.5, 0.5, 0])  # should always get conv3x3
     )
     # obtains test accuracy
     result = algorithm.solve(
@@ -96,19 +100,31 @@ def main():
     show = False  # whether or not to show the figure with final results
     # search space interface
     interface = NATSInterface(dataset=dataset)
-    result_list = Manager().list()
-    n_cpus = min(n_runs, int(os.cpu_count() * .75))  # use 75% of available cores
-
-    with Pool(processes=n_cpus) as pool:
-        p = pool.imap(launch_and_log, [result_list for _ in range(n_runs)]) # this list comprehension points at the same object in memory
-        for _ in tqdm(p, total=n_runs):
-           pass
     
+    if goparallel:  # parallelize the execution of the various test runs
+        n_cpus = min(int(n_runs/2.5), int(os.cpu_count() * .50))  # use 50% available cores
+        print(f"Using {n_cpus} cores!")
+        # shared memory object to which all subprocesses can access
+        result_list = Manager().list()
+        with Pool(processes=n_cpus) as pool:
+            p = pool.imap_unordered(launch_and_log, [result_list for _ in range(n_runs)]) # this list comprehension points at the same object in memory
+            for _ in tqdm(p, total=n_runs):
+                pass # simply updates the progress bar without doing anything else
+    else: 
+        result_list = []
+        for _ in tqdm(range(n_runs)): 
+            launch_and_log(result_list=result_list)
+        
     # interfacing the output
     if store_traj: 
         accuracies = [r[0] for r in result_list]
+        nets = [r[1][-1].genotype for r in result_list]
     else: 
         accuracies = result_list
+    
+    print("Terminal timestep nets reached are: ")
+    for net in nets:
+        print(genotype_to_architecture(net))
     # retrieving average and std for the accuracy
     avg_test_accuracy, std_test_accuracy = np.mean(accuracies), np.std(accuracies)
 
@@ -126,7 +142,13 @@ def main():
             plt.show()
         # choose whether or not to save the figure
         if savefig:
-            fig.savefig(f"AvgEvolution_{dataset}_{n_runs}.svg")
+            script_dir = os.path.dirname(__file__)
+            results_dir = os.path.join(script_dir, 'images/')
+            exp_figname = f"AvgEvolution_{dataset}_{n_runs}runs_{n_generations}gens.svg"
+            if not os.path.isdir(results_dir):
+                os.makedirs(results_dir)
+            
+            fig.savefig(results_dir + exp_figname)
         
 if __name__=="__main__":
     main()
