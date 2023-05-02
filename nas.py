@@ -51,8 +51,7 @@ def init_and_launch():
     algorithm = GeneticSearch(
         dataset=dataset,
         lookup=use_lookup,
-        genetics_dict=FreeREA_dict,
-        fitness_weights=np.array([0.5, 0.5, 0])  # should always get conv3x3
+        genetics_dict=FreeREA_dict
     )
     # obtains test accuracy
     result = algorithm.solve(
