@@ -1,4 +1,4 @@
-*Edit: The authors official implementation is now available on GitHub at [github.com/NicoloCavagnero/FreeREA](https://github.com/NiccoloCavagnero/FreeREA).*
+*Edit: The authors official implementation is now available on GitHub at [github.com/NiccoloCavagnero/FreeREA](https://github.com/NiccoloCavagnero/FreeREA).*
 
 > **Disclaimer**
 This repo offers a tour of an implementation of [FreeREA: Training-Free Evolution-based Architecture Search](https://arxiv.org/pdf/2207.05135.pdf), by Cavagnero et al, 2022.

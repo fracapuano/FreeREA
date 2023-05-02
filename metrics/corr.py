@@ -1,15 +1,16 @@
 import torch
 import torch.nn as nn
+from commons.utils import correlation
 
-def compute_naswot(
+def compute_corr(
     net: nn.Module, 
     inputs: torch.Tensor, 
     device: torch.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     ) -> float:
-    """Computes the NASWOT score for a given network
+    """Computes the correlation score for a given network
     
     Args: 
-        net (nn.Module): Actual network to be scored according to naswot.
+        net (nn.Module): Actual network to be scored according to corr.
         inputs (torch.Tensor): Tensor of size `batch_size` corresponding to the images forwarded as input.
         device (torch.device): Either CPU or GPU device.
     """
@@ -18,7 +19,7 @@ def compute_naswot(
         # result of hooks
         cs = list()
 
-        def naswot_hook(module: nn.Module, module_input: torch.Tensor, module_output: torch.Tensor) -> None:
+        def corr_hook(module: nn.Module, module_input: torch.Tensor, module_output: torch.Tensor) -> None:
             """
             This function hooks an extra-operation to forward pass of module `m`.
 
@@ -33,13 +34,13 @@ def compute_naswot(
         # storing applied hooks to remove them from array when they are not needed anymore
         hooks = list()
         for m in net.modules():
-            if isinstance(m, nn.ReLU):  # naswot is defined for ReLU only layers
-                hooks.append(m.register_forward_hook(naswot_hook))  # register naswot hook for ReLU layers
+            if isinstance(m, nn.ReLU):  # corr is defined for ReLU only layers
+                hooks.append(m.register_forward_hook(corr_hook))  # register corr hook for ReLU layers
 
-        net.to(device)
+        net.double().to(device)
         inputs = inputs.to(device)
         # populating cs with the ReLU embeddings
-        _ = net(inputs)
+        _ = net(inputs.double())
 
         # removing hooks once they have been used
         for h in hooks:
@@ -60,9 +61,7 @@ def compute_naswot(
         not_full_code_float = torch.logical_not(full_code).float()
         # hamming distance is number of disagreements = size of array - number of agreements
         k += not_full_code_float @ not_full_code_float.t()
-        # naswot score computed on k
-        naswot_score = torch.slogdet(k).logabsdet.item()
-        if naswot_score == float('-inf'):
-            naswot_score = 1e-6
+        # correlation computed on k
+        corr = correlation(k)
         
-        return naswot_score
+        return corr
