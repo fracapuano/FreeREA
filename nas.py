@@ -122,9 +122,15 @@ def main():
     else: 
         accuracies = result_list
     
-    print("Terminal timestep nets reached are: ")
-    for net in nets:
-        print(genotype_to_architecture(net))
+    script_dir = os.path.dirname(__file__)
+    logs_dir = os.path.join(script_dir, 'logs/')
+    if not os.path.isdir(logs_dir):
+        os.makedirs(logs_dir)
+
+    with open(logs_dir + f"{n_generations}gens_{dataset}_log.txt", "w") as f:
+        f.write("Terminal timestep nets reached are: \n")
+        for idx, net in enumerate(nets):
+            f.write(f"Run-{idx}: " + genotype_to_architecture(net) + "\n")
     # retrieving average and std for the accuracy
     avg_test_accuracy, std_test_accuracy = np.mean(accuracies), np.std(accuracies)
 
@@ -142,7 +148,6 @@ def main():
             plt.show()
         # choose whether or not to save the figure
         if savefig:
-            script_dir = os.path.dirname(__file__)
             results_dir = os.path.join(script_dir, 'images/')
             exp_figname = f"AvgEvolution_{dataset}_{n_runs}runs_{n_generations}gens.svg"
             if not os.path.isdir(results_dir):
