@@ -219,6 +219,8 @@ class GeneticSearch:
             )
         
         best_individual = max(all_individuals, key=compute_fitness)
+        # appending in last position the actual best element
+        bests.append(best_individual)
 
         # retrieve test accuracy for this individual
         test_metrics = read_test_metrics(dataset=self.dataset)
