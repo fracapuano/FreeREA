@@ -112,7 +112,7 @@ class Genetic:
                genes_prob:Tuple[None, List[float]]=None) -> Individual: 
         """Applies mutation to a given individual"""
         for _ in range(n_loci): 
-            mutant_genotype = individual.genotype
+            mutant_genotype = copy(individual.genotype)
             # select a locus in the genotype (that is, where mutation will occurr)
             if genes_prob is None:  # uniform probability over all loci
                 mutant_locus = np.random.randint(low=0, high=len(mutant_genotype))
