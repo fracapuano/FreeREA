@@ -1,6 +1,12 @@
 from commons.nats_interface import NATSInterface
 from commons.genetics import Genetic, Population
-from commons.utils import get_project_root, read_lookup_table, read_test_metrics, load_images
+from commons.utils import (
+    get_project_root, 
+    read_lookup_table, 
+    read_test_metrics, 
+    load_images, 
+    genotype_to_architecture
+)
 from .fitness import *
 from typing import Callable
 from tqdm import tqdm
@@ -171,8 +177,11 @@ class GeneticSearch:
         MAX_GENERATIONS = max_generations
         population, individuals = self.population, self.population.individuals
         bests = []
+        history = {}
 
         for gen in range(MAX_GENERATIONS):
+            # store the population
+            history.update({genotype_to_architecture(ind.genotype): ind for ind in population})
             # save best individual
             bests.append(max(individuals, key=lambda ind: ind.fitness))
             # perform ageing
@@ -182,7 +191,7 @@ class GeneticSearch:
             # obtain recombinant child
             child = self.perform_recombination(parents=parents)
             # mutate parents
-            mutant1, mutant2 = [self.perform_mutation(parent) for parent in parents]
+            mutant1, mutant2 = [self.perform_mutation(parent) for parent in parents]            
             # add mutants and child to population
             population.add_to_population([child, mutant1, mutant2])
             # preprocess the new population - TODO: Implement a only-if-extremes-change strategy
@@ -194,11 +203,27 @@ class GeneticSearch:
             # overwrite population
             individuals = population.individuals
 
-        best_individual = max(population.individuals, key=lambda ind: ind.fitness)
+        # in FreeREA (as in REA) the best individual is defined as the best found so far.
+        # this returns the fittest individual in the population of all the architectures ever tried.
+        all_individuals = Population(
+            space=self.nats, 
+            init_population=list(history.values()))
+        for score in self.score_names:
+            all_individuals.set_extremes(score=score)
+
+        compute_fitness = lambda ind: fitness_score(
+            ind, 
+            population=all_individuals, 
+            style=self.population.normalization, 
+            weights=self.weights
+            )
+        
+        best_individual = max(all_individuals, key=compute_fitness)
 
         # retrieve test accuracy for this individual
         test_metrics = read_test_metrics(dataset=self.dataset)
         test_accuracy = test_metrics[best_individual.index, 1]
+
         if not return_trajectory:
             return (best_individual, test_accuracy)
         else: 
