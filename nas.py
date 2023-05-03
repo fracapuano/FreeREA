@@ -133,8 +133,8 @@ def main():
     # retrieving average and std for the accuracy
     avg_test_accuracy, std_test_accuracy = np.mean(accuracies), np.std(accuracies)
 
-    print('On {} the found networks has an average test accuracy of: {:.5g} ± {:.5g}'.format(
-        dataset, avg_test_accuracy, std_test_accuracy)
+    print('On {} (using {} gens) the found networks have an average test accuracy of: {:.5g} ± {:.5g}'.format(
+        dataset, n_generations, avg_test_accuracy, std_test_accuracy)
         )
     
     if store_traj:
