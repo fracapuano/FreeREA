@@ -52,7 +52,7 @@ def init_and_launch():
         dataset=dataset,
         lookup=use_lookup,
         genetics_dict=FreeREA_dict
-    )
+        )
     # obtains test accuracy
     result = algorithm.solve(
         max_generations=n_generations, 
