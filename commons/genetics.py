@@ -20,7 +20,7 @@ class Individual():
         dataset:str="cifar10", 
         searchspace_interface:object=None):
         
-        self.scores = {}
+        self.scores = {}  # TODO: MOVE EACH INDIVIDUAL SCORE INSIDE THIS DICTIONARY
         self.net = net
         self._genotype = genotype
         self.index=index
@@ -86,17 +86,18 @@ class Genetic:
         self, 
         genome:Iterable[str], 
         strategy:Tuple[str, str]="comma", 
-        tournament_size:int=5,
-        cross_p:float=0.5):
+        tournament_size:int=5):
         
         self.genome = set(genome) if not isinstance(genome, set) else genome
         self.strategy = strategy
         self.tournament_size = tournament_size
-        self.cross_probability = cross_p
 
     def tournament(self, population:Iterable[Individual]) -> Iterable[Individual]:
-        """Return tournament, i.e. a random subset of population of size tournament size"""
-        return np.random.choice(a=population, size=self.tournament_size).tolist()
+        """
+        Return tournament, i.e. a random subset of population of size tournament size. 
+        Sampling is done without replacement to ensure diversity inside the actual tournament.
+        """
+        return np.random.choice(a=population, size=self.tournament_size, replace=False).tolist()
     
     def obtain_parents(self, population:Iterable[Individual], n_parents:int=2) -> Iterable[Individual]:
         """Obtain n_parents from population. Parents are defined as the fittest individuals in n_parents tournaments"""
@@ -105,19 +106,25 @@ class Genetic:
         parents = sorted(tournament, key = lambda individual: individual.fitness, reverse=True)[:n_parents]
         return parents
     
-    def mutate(self, individual:Individual, n_loci:int=1) -> Individual: 
+    def mutate(self, 
+               individual:Individual, 
+               n_loci:int=1, 
+               genes_prob:Tuple[None, List[float]]=None) -> Individual: 
         """Applies mutation to a given individual"""
         for _ in range(n_loci): 
-            mutant_genotype = individual.genotype
+            mutant_genotype = copy(individual.genotype)
             # select a locus in the genotype (that is, where mutation will occurr)
-            mutant_locus = np.random.randint(low=0, high=len(mutant_genotype))
+            if genes_prob is None:  # uniform probability over all loci
+                mutant_locus = np.random.randint(low=0, high=len(mutant_genotype))
+            else:  # custom probability distrubution over which locus to mutate
+                mutant_locus = np.random.choice(mutant_genotype, p=genes_prob)
             # mapping the locus to the actual gene that will effectively change
             mutant_gene = mutant_genotype[mutant_locus]
             operation, level = mutant_gene.split("~")  # splits the gene into operation and level
             # mutation changes gene, so the current one must be removed from the pool of candidate genes
             mutations = self.genome.difference([operation])
             
-            # overwriting the mutant gene with a new one
+            # overwriting the mutant gene with a new one - probability of chosing how to mutate should be selected as well
             mutant_genotype[mutant_locus] = np.random.choice(a=list(mutations)) + f"~{level}"
 
         mutant_individual = Individual(net=None, genotype=None, index=None)
@@ -125,40 +132,43 @@ class Genetic:
 
         return mutant_individual
     
-    def recombine(self, individuals:Iterable[Individual], n_parts:int=2) -> Individual: 
+    def recombine(self, individuals:Iterable[Individual], P_parent1:float=0.5) -> Individual: 
         """Performs recombination of two given `individuals`"""
         if len(individuals) != 2: 
             raise ValueError("Number of individuals cannot be different from 2!")
         
         individual1, individual2 = individuals
-        recombinant = copy(individual1)
-        
-        # select the index in which to cut down the individual
-        recombination_locus = np.random.randint(low=0, high=len(individual1.genotype)-1)
-        # individual1 is dominant in the recombinant with probability self.cross_p
-        realization = np.random.random()
-        # defining new genotype of recombinant individual
-        if realization < self.cross_probability:
-            recombinant_genotype = chain(individual1.genotype[:recombination_locus], individual2.genotype[recombination_locus:])
-        else:
-            recombinant_genotype = chain(individual2.genotype[:recombination_locus], individual1.genotype[recombination_locus:])
-        
+        recombinant_genotype = [None for _ in range(len(individual1.genotype))]
+        for locus_idx, (gene_1, gene_2) in enumerate(zip(individual1.genotype, individual2.genotype)):
+            # chose genes from parent1 according to P_parent1
+            recombinant_genotype[locus_idx] = gene_1 if np.random.random() <= P_parent1 else gene_2
+
         recombinant = Individual(net=None, genotype=None, index=None)
         recombinant.update_genotype(list(recombinant_genotype))
 
         return recombinant
 
 class Population: 
-    def __init__(self, space:object, individual:object=Individual, init_population:Union[bool, Iterable]=True, n_individuals:int=20): 
+    def __init__(self,
+                 space:object,
+                 init_population:Union[bool, Iterable]=True,
+                 n_individuals:int=20,
+                 normalization:str='dynamic'): 
         self.space = space
-        self.individual = individual
-        if init_population:
-            self._population = generate_population(searchspace_interface=space, individual=individual, n_individuals=n_individuals)
+        if init_population is True:
+            self._population = generate_population(searchspace_interface=space, n_individuals=n_individuals)
         else: 
             self._population = init_population
         
         self.oldest = None
         self.worst_n = None
+        self.normalization = normalization.lower()
+        if self.normalization in ['minmax', 'standard']:
+            df_scores = pd.read_csv(f'{str(get_project_root())}/cachedmetrics/{self.space.dataset}_{normalization}.csv')
+            self.scores_dict = {
+                key: value for value, key in enumerate(df_scores.columns)
+            }
+            self.extreme_scores = df_scores.values
     
     def __iter__(self): 
         for i in self._population: 
@@ -193,69 +203,39 @@ class Population:
         for individual in self.individuals: 
             individual.overwrite_fitness(fitness_function(individual))
     
-    def apply_on_individuals(self, function:Callable, lookup_table:np.ndarray=None)->Union[Iterable, None]: 
+    def apply_on_individuals(self, function:Callable)->Union[Iterable, None]: 
         """Applies a function on each individual in the population
         
         Args: 
             function (Callable): function to apply on each individual. Must return an object of class Individual.
-            lookup (bool, option): Whether to obtain the score of each metric from a lookup table.
         Returns: 
             Union[Iterable, None]: Iterable when inplace=False represents the individuals with function applied.
                                    None represents the output when inplace=True (hence function is applied on the
                                    actual population.
         """
-        if lookup_table is not None:
-            self._population = [function(individual, lookup_table) for individual in self._population]
-        else:
-            self._population = [function(individual) for individual in self._population]
+        self._population = [function(individual) for individual in self._population]
 
     def set_extremes(self, score:str):
         """Set the maximal&minimal value in the population for the score 'score' (must be a class attribute)"""
-        # sorting in ascending order
-        min_value = getattr(min(self.individuals, key=lambda ind: getattr(ind, score)), score)
-        max_value = getattr(max(self.individuals, key=lambda ind: getattr(ind, score)), score)
+        if self.normalization == 'dynamic':
+            # accessing to the score of each individual
+            scores = [getattr(ind, score) for ind in self.individuals]
+            min_value = min(scores)
+            max_value = max(scores)
+        elif self.normalization == 'minmax':
+            # extreme_scores is a 2x`number_of_scores`
+            min_value, max_value = self.extreme_scores[:, self.scores_dict[score]]
+        elif self.normalization == 'standard':
+            # extreme_scores is a 2x`number_of_scores`
+            mean_value, std_value = self.extreme_scores[:, self.scores_dict[score]]
 
-        setattr(self, f"max_{score}", max_value)
-        setattr(self, f"min_{score}", min_value)
+        if self.normalization in ['minmax', 'dynamic']:
+            setattr(self, f"max_{score}", max_value)
+            setattr(self, f"min_{score}", min_value)
+        else:
+            setattr(self, f"mean_{score}", mean_value)
+            setattr(self, f"std_{score}", std_value)
 
-
-    def normalize_scores(self, score:str, inplace:bool=True)->Union[Iterable, None]: 
-        """Normalizes the scores (stored as class attributes) of each individual with respect to the maximal"""
-        if not isinstance(score, str): 
-            raise ValueError(f"Input score '{score}' is not a string!")
-
-        try:
-            min_value, max_value = getattr(self, f"min_{score}"), getattr(self, f"max_{score}")
-            # mapping score values in the [0,1] range using min-max normalization
-            def minmax_individual(individual:Individual):
-                """Normalizes in the [0,1] range the value of a given score"""
-                if getattr(individual, score) > 1: # only remapping elements not in the [0,1] range
-                    setattr(
-                        individual,
-                        score, 
-                        (getattr(individual, score) - min_value) / (max_value - min_value) if max_value != min_value else 0
-                        )
-                else:
-                    pass
-                return individual
-
-            # normalizing
-            new_population = list(map(
-                # mapping each score value in the [0,1] range considering population-wise metrics
-                minmax_individual,
-                # looping in all individuals
-                self.individuals
-            ))
-
-            if inplace: 
-                self.update_population(new_population=new_population)
-            else: 
-                return new_population
-            
-        except AttributeError:  # extremes attribute not present... sorting&setting 
-            self.set_extremes(score=score)
-            self.normalize_scores(score)
-    
     def age(self): 
         """Embeds ageing into the process"""
         def individuals_ageing(individual): 
@@ -266,12 +246,14 @@ class Population:
     
     def add_to_population(self, new_individuals:Iterable[Individual]): 
         """Add new_individuals to population"""
+        # TODO: add a block that if new_individuals are over the current extremes resets those
         self._population = list(chain(self.individuals, new_individuals))
     
     def remove_from_population(self, attribute:str="fitness", n:int=1, ascending:bool=True): 
         """Remove first/last `n` elements from sorted population population in `ascending/descending`
         order based on the value of `attribute`"""
-        
+        # TODO: Implement a removal from population strategy that is O(n) (remove min individual) 
+        # - currently sorting is obviously not!
         if not all([hasattr(el, attribute) for el in self.individuals]):
             raise ValueError(f"Attribute '{attribute}' is not an attribute of all the individuals!")
         # sort the population based on the value of attribute
@@ -306,13 +288,16 @@ class Population:
         self.worst_n = sorted(self.individuals, key=lambda ind: getattr(ind, attribute))[:n]
     
 
-def generate_population(searchspace_interface:NATSInterface, individual:Individual, n_individuals:int=20)->list: 
+def generate_population(searchspace_interface:NATSInterface, n_individuals:int=20)->list: 
     """Generate a population of individuals"""
     # at first generate full architectures, cell-structure and unique network indices
     architectures, cells, indices = searchspace_interface.generate_random_samples(n_samples=n_individuals)
     
-    # mapping strings to list of genes (~genome)
+    # mapping strings to list of genes (~genomes)
     genotypes = map(lambda cell: architecture_to_genotype(cell), cells)
     # turn full architecture and cell-structure into genetic population individual
-    population = [individual(net=net, genotype=genotype, index=index) for net, genotype, index in zip(architectures, genotypes, indices)]
+    population = [
+        Individual(net=net, genotype=genotype, index=index) 
+        for net, genotype, index in zip(architectures, genotypes, indices)
+    ]
     return population
