@@ -85,9 +85,7 @@ def normalize_scores(individual:Individual, population:Population, score:str, st
             return (current_score - min_value) / (max_value - min_value)
         else: 
             # only way min and max are equal is that also individual.score is equal to them
-            # in which case they are all the same, hence the actual number used does not really 
-            # matter this much.
-            return 1
+            return current_score / max_value if max_value > 1e-6 else current_score
     
     # mapping score values to distribution with mean 0 and std 1
     def standardize_individual(individual:Individual):
