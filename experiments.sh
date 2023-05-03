@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the arguments that should be looped over
-generations=(50 100 150)
+generations=(50 100 200)
 datasets=("cifar10" "cifar100" "imagenet")
 
 # Loop over the arguments and run nas.py for each combination
