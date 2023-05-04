@@ -1,35 +1,29 @@
-*Edit: The authors official implementation is now available on GitHub at [github.com/NicoloCavagnero/FreeREA](https://github.com/NiccoloCavagnero/FreeREA).*
+*Edit: The authors official implementation is now available on GitHub at [github.com/NiccoloCavagnero/FreeREA](https://github.com/NiccoloCavagnero/FreeREA).*
 
 > **Disclaimer**
-This repo offers a tour of an implementation of [FreeREA: Training-Free Evolution-based Architecture Search](https://arxiv.org/pdf/2207.05135.pdf), by Cavagnero et al, 2022.
+This repo presents an implementation of [FreeREA: Training-Free Evolution-based Architecture Search](https://arxiv.org/pdf/2207.05135.pdf), by Cavagnero et al, 2022.
 This work is not associated in any way or form with the authors and only aims at reproducing the findings presented by the authors in the cited paper. 
-The main author has been informed of the publicity of this re-implementation. 
-
+The authors have been informed of this re-implementation.
 
 # Set-up
-
-After having downloaded the repo, the first step to use this code is installing dependencies.
-
+After having locally cloned this repo, the first step to use this code is installing the required dependencies.
 To set up dependancies, set up a virtual environment clonig the `env.yml` file.
 
 ```bash
-conda env create -f env.yml
+$ conda create --name <env_name> --file requirements.txt
 ```
 
-Once dependencies are successfully installed, please go ahead and download **in the main folder** (that is, `freeREA`) the `archive` folder, containing the actual NATS-Bench networks. Archive also contains data that are otherwise re-downloaded. `archive` is already in the `.gitignore` file of this repo. 
+Once dependencies have been successfully installed, please go ahead and download **in the main folder** (that is, `FreeREA`) the `archive` folder, containing the actual NATS-Bench networks. `archive` is already in the `.gitignore` file of this repo.
 
-To download `archive` run the following:
+To download NATS-Bench and create the `archive` folder simply run the following:
 ```bash
-wget "https://www.dropbox.com/sh/ceeo70u1buow681/AADxyCvBAnE6mMjp7JOoo0LVa/NATS-tss-v1_0-3ffb9-simple.tar"
-tar -xf "NATS-tss-v1_0-3ffb9-simple.tar"
-mv NATS-tss-v1_0-3ffb9-simple.tar archive/NATS-tss-v1_0-3ffb9-simple.tar
+$ bash setup_nats.sh
 ```
-This solution only downloads the NATS search space and triggers the download of the CIFAR10 dataset.
-
 Alternatively, one could download `archive` from [here](https://drive.google.com/file/d/1LMpDiS1hmCLsC4Y86bhF41NzqAx5kS8c/view) and then unzip the folder. 
 
-Please consider that downloading the search space only is more than sufficient as fully trained models are not needed, since the benchmark conveniently stores the model performance metrics. More than that, the trained models are very space intensive.
+Please consider that downloading the search space only is more than sufficient as fully trained models are not needed, since the benchmark conveniently stores the model performance metrics. More than that, downloading the trained architectures (that is, the fully trained architectures with their weights) would download 200+ GB of architectures.
 
-# Examples
-To see an example of how this repository can be used, please refer to [this notebook](https://github.com/fracapuano/freeREA/blob/main/FreeREA.ipynb).
-Moreover, a more generic example of usage can be found [here](https://github.com/gsuriano/Project8_Group5/blob/main/Group5_Step3.ipynb).
+# Run the experiments
+To reproduce FreeREA experiments you simply need to launch `experiments.sh`. This file will create a grid of `n x m` experiments, with `n=number of number_of_generations` and `m=number of datasets`. 
+
+> Note: All combinations will be executed in parallel!

@@ -15,9 +15,12 @@ class NATSInterface:
     
         self._api = create(file_path_or_dict=path, search_space="topology", fast_mode=True, verbose=verbose)
         # sanity check on the given dataset
-        self.NATS_datasets = ["cifar10", "cifar100", "imagenet16-120"]
+        self.NATS_datasets = ["cifar10", "cifar100", "ImageNet16-120"]
         if dataset.lower() not in self.NATS_datasets: 
-            raise ValueError(f"Dataset '{dataset}' not in {self.NATS_datasets}!")
+            if 'imagenet' in dataset.lower():
+                dataset = 'ImageNet16-120'
+            else:
+                raise ValueError(f"Dataset '{dataset}' not in {self.NATS_datasets}!")
         
         self._dataset = dataset
 

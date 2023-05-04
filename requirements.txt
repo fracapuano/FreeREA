@@ -1,0 +1,8 @@
+nats_bench
+numpy
+pandas
+scipy
+torch
+torchvision
+tqdm
+xautodl @ git+https://github.com/D-X-Y/AutoDL-Projects.git
