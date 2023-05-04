@@ -22,3 +22,8 @@ $ bash setup_nats.sh
 Alternatively, one could download `archive` from [here](https://drive.google.com/file/d/1LMpDiS1hmCLsC4Y86bhF41NzqAx5kS8c/view) and then unzip the folder. 
 
 Please consider that downloading the search space only is more than sufficient as fully trained models are not needed, since the benchmark conveniently stores the model performance metrics. More than that, downloading the trained architectures (that is, the fully trained architectures with their weights) would download 200+ GB of architectures.
+
+# Run the experiments
+To reproduce FreeREA experiments you simply need to launch `experiments.sh`. This file will create a grid of `n x m` experiments, with `n=number of number_of_generations` and `m=number of datasets`. 
+
+> Note: All combinations will be executed in parallel!
