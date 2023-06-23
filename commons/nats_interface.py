@@ -20,9 +20,8 @@ class NATSInterface:
         dataset:str="cifar10", 
         ):
     
-        json.loads('checkpoint_1.json', object_hook=jsonKeys2int)
         with open('checkpoint_1.json', 'rb') as f:
-            self._api = json.load(f, object_hook=jsonKeys2int)
+            self._api = jsonKeys2int(json.load(f))
         # sanity check on the given dataset
         self.NATS_datasets = ["cifar10", "cifar100", "ImageNet16-120"]
         if dataset.lower() not in self.NATS_datasets: 

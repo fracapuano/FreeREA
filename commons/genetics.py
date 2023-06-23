@@ -30,19 +30,19 @@ class Individual():
         self._rank = 0
         # searchspace interface needed to exploit search space properties
         if searchspace_interface is None: 
-            self.interface = NATSInterface(path=NATSPATH, dataset=dataset)
+            self.interface = NATSInterface(dataset=dataset)
         else: 
             self.interface = searchspace_interface
             
-    def update_net(self):
-        """Over-writes net field in light of genotype"""
-        genotype_arch_str = genotype_to_architecture(self.genotype)
-        self.net, _ = self.interface.query_with_architecture(architecture_string=genotype_arch_str)
+    # def update_net(self):
+    #     """Over-writes net field in light of genotype"""
+    #     genotype_arch_str = genotype_to_architecture(self.genotype)
+    #     self.net, _ = self.interface.query_with_architecture(architecture_string=genotype_arch_str)
 
     def update_idx(self):
         """Over-writes index field in light of genotype"""
         genotype_arch_str = genotype_to_architecture(self.genotype)
-        self.index = self.interface.query_index_by_architecture(architecture_string=genotype_arch_str)
+        self.index = self.interface.query_with_architecture(architecture_string=genotype_arch_str)
 
     @property
     def genotype(self): 
@@ -55,7 +55,7 @@ class Individual():
             ValueError(f"genotype {new_genotype} is not a valid replacement for {self.genotype}!")
 
         self._genotype = new_genotype
-        self.update_net()
+        # self.update_net()
         self.update_idx()
 
     @property
@@ -291,13 +291,13 @@ class Population:
 def generate_population(searchspace_interface:NATSInterface, n_individuals:int=20)->list: 
     """Generate a population of individuals"""
     # at first generate full architectures, cell-structure and unique network indices
-    architecture, indices = searchspace_interface.generate_random_samples(n_samples=n_individuals)
+    architectures, indices = searchspace_interface.generate_random_samples(n_samples=n_individuals)
     
     # mapping strings to list of genes (~genomes)
-    genotypes = architecture_to_genotype(architecture)
+    genotypes = [architecture_to_genotype(architecture) for architecture in architectures]
     # turn full architecture and cell-structure into genetic population individual
     population = [
         Individual(net=net, genotype=genotype, index=index) 
-        for net, genotype, index in zip(architecture, genotypes, indices)
+        for net, genotype, index in zip(architectures, genotypes, indices)
     ]
     return population
