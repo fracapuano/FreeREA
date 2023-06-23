@@ -18,9 +18,10 @@ class NATSInterface:
     def __init__(
         self, 
         dataset:str="cifar10", 
+        path:str='json_interface.json'
         ):
     
-        with open('checkpoint_1.json', 'rb') as f:
+        with open(path, 'rb') as f:
             self._api = jsonKeys2int(json.load(f))
         # sanity check on the given dataset
         self.NATS_datasets = ["cifar10", "cifar100", "ImageNet16-120"]
