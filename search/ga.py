@@ -32,8 +32,7 @@ class GeneticSearch:
         self.images = load_images(dataset=dataset)
 
         # instantiating a NATSInterface object
-        NATS_PATH = str(get_project_root()) + "/archive/NATS-tss-v1_0-3ffb9-simple/"
-        self.nats = NATSInterface(path=NATS_PATH, dataset=self.dataset)
+        self.nats = NATSInterface(dataset=self.dataset)
 
         # instantiating a population
         self.population = Population(

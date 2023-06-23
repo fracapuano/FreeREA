@@ -291,13 +291,13 @@ class Population:
 def generate_population(searchspace_interface:NATSInterface, n_individuals:int=20)->list: 
     """Generate a population of individuals"""
     # at first generate full architectures, cell-structure and unique network indices
-    architectures, cells, indices = searchspace_interface.generate_random_samples(n_samples=n_individuals)
+    architecture, indices = searchspace_interface.generate_random_samples(n_samples=n_individuals)
     
     # mapping strings to list of genes (~genomes)
-    genotypes = map(lambda cell: architecture_to_genotype(cell), cells)
+    genotypes = architecture_to_genotype(architecture)
     # turn full architecture and cell-structure into genetic population individual
     population = [
         Individual(net=net, genotype=genotype, index=index) 
-        for net, genotype, index in zip(architectures, genotypes, indices)
+        for net, genotype, index in zip(architecture, genotypes, indices)
     ]
     return population
